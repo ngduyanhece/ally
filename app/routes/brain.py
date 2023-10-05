@@ -48,7 +48,7 @@ async def brain_endpoint(
     "/brains/public", dependencies=[Depends(AuthBearer())])
 async def public_brains_endpoint() -> list[PublicBrain]:
     """
-    Retrieve all Quivr public brains
+    Retrieve all ally public brains
     """
     return get_public_brains()
 
