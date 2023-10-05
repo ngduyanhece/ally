@@ -14,6 +14,10 @@ from app.repository.brain import (create_brain, create_brain_user,
                                   get_public_brains, get_user_brains,
                                   get_user_default_brain,
                                   set_as_default_brain_for_user)
+from app.repository.brain.delete_brain_user import delete_brain_user
+from app.repository.brain.update_brain import update_brain_by_id
+from app.repository.prompt.delete_prompt_py_id import delete_prompt_by_id
+from app.repository.prompt.get_prompt_by_id import get_prompt_by_id
 from app.routes.authorizations.brain_authorization import \
     has_brain_authorization
 from app.routes.authorizations.types import RoleEnum
@@ -23,7 +27,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 # get all brains
-@router.get("/brains/", dependencies=[Depends(AuthBearer())], tags=["Brain"])
+@router.get("/brains/", dependencies=[Depends(AuthBearer())])
 async def brain_endpoint(
     current_user: UserIdentity = Depends(get_current_user),
 ):
@@ -41,8 +45,7 @@ async def brain_endpoint(
 
 
 @router.get(
-    "/brains/public", dependencies=[Depends(AuthBearer())], tags=["Brain"]
-)
+    "/brains/public", dependencies=[Depends(AuthBearer())])
 async def public_brains_endpoint() -> list[PublicBrain]:
     """
     Retrieve all Quivr public brains
@@ -52,8 +55,7 @@ async def public_brains_endpoint() -> list[PublicBrain]:
 
 # get default brain
 @router.get(
-    "/brains/default/", dependencies=[Depends(AuthBearer())], tags=["Brain"]
-)
+    "/brains/default/", dependencies=[Depends(AuthBearer())])
 async def get_default_brain_endpoint(
     current_user: UserIdentity = Depends(get_current_user),
 ):
@@ -73,8 +75,7 @@ async def get_default_brain_endpoint(
 
 @router.get(
     "/brains/{brain_id}/",
-    dependencies=[Depends(AuthBearer()), Depends(has_brain_authorization())],
-    tags=["Brain"],
+    dependencies=[Depends(AuthBearer()), Depends(has_brain_authorization())]
 )
 async def get_brain_endpoint(
     brain_id: UUID,
@@ -100,7 +101,7 @@ async def get_brain_endpoint(
 
 
 # create new brain
-@router.post("/brains/", dependencies=[Depends(AuthBearer())], tags=["Brain"])
+@router.post("/brains/", dependencies=[Depends(AuthBearer())])
 async def create_brain_endpoint(
     brain: CreateBrainProperties,
     current_user: UserIdentity = Depends(get_current_user),
@@ -167,7 +168,6 @@ async def create_brain_endpoint(
         ),
         Depends(has_brain_authorization([RoleEnum.Editor, RoleEnum.Owner])),
     ],
-    tags=["Brain"],
 )
 async def update_brain_endpoint(
     brain_id: UUID,
@@ -193,7 +193,7 @@ async def update_brain_endpoint(
                 delete_prompt_by_id(prompt_id)
 
     if brain_to_update.status == "private" and existing_brain.status == "public":
-        delete_brain_users(brain_id)
+        delete_brain_user(brain_id)
 
     update_brain_by_id(brain_id, brain_to_update)
 
@@ -208,7 +208,6 @@ async def update_brain_endpoint(
         ),
         Depends(has_brain_authorization()),
     ],
-    tags=["Brain"],
 )
 async def set_as_default_brain_endpoint(
     brain_id: UUID,
