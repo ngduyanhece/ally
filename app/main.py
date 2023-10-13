@@ -5,7 +5,7 @@ from app.routers import router
 
 app = FastAPI()
 add_cors_middleware(app)
-app.include_router(router, prefix="/api/v1")
+app.include_router(router, prefix="")
 
 
 if __name__ == "__main__":

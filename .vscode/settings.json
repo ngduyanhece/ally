@@ -45,4 +45,20 @@
   "python.linting.pycodestyleCategorySeverity.W": "Error",
   "python.defaultInterpreterPath": "python3",
   "python.linting.flake8CategorySeverity.W": "Error",
+  "cSpell.words": [
+    "CELEBRY",
+    "COREAPPSETTING",
+    "dateshort",
+    "fastapi",
+    "healthz",
+    "ipnyb",
+    "ipynb",
+    "Knowledges",
+    "langchain",
+    "mpga",
+    "openai",
+    "pydantic",
+    "supabase",
+    "vectorstore"
+  ],
 }

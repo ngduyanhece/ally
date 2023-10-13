@@ -1,6 +1,7 @@
 from app.logger import get_logger
-from app.models.databases.supabase import (ApiKeyHandler, Brain, Prompts,
-                                           UserUsage)
+from app.models.databases.supabase import (ApiKeyHandler, Brain, Chats, File,
+                                           Knowledges, Notifications, Prompts,
+                                           UserUsage, Vector)
 
 logger = get_logger(__name__)
 
@@ -8,7 +9,12 @@ class SupabaseDB(
     Brain,
     UserUsage,
     Prompts,
-    ApiKeyHandler
+    ApiKeyHandler,
+    Chats,
+    Notifications,
+    Knowledges,
+    Vector,
+    File
 ):
 
     def __init__(self, supabase_client):
@@ -17,3 +23,8 @@ class SupabaseDB(
         UserUsage.__init__(self, supabase_client)
         Prompts.__init__(self, supabase_client)
         ApiKeyHandler.__init__(self, supabase_client)
+        Chats.__init__(self, supabase_client)
+        Notifications.__init__(self, supabase_client)
+        Knowledges.__init__(self, supabase_client)
+        Vector.__init__(self, supabase_client)
+        File.__init__(self, supabase_client)

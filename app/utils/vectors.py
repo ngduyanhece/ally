@@ -2,10 +2,49 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List
 from uuid import UUID
 
+from langchain.embeddings.openai import OpenAIEmbeddings
+from pydantic import BaseModel
+
 from app.logger import get_logger
-from app.models.settings import get_supabase_db
+from app.models.settings import (get_documents_vector_store, get_embeddings,
+                                 get_supabase_db)
 
 logger = get_logger(__name__)
+
+
+class Neurons(BaseModel):
+    def create_vector(self, doc, user_openai_api_key=None):
+        documents_vector_store = get_documents_vector_store()
+        logger.info("Creating vector for document")
+        logger.info(f"Document: {doc}")
+        if user_openai_api_key:
+            documents_vector_store._embedding = OpenAIEmbeddings(
+                openai_api_key=user_openai_api_key
+            )  # pyright: ignore reportPrivateUsage=none
+        try:
+            sids = documents_vector_store.add_documents([doc])
+            if sids and len(sids) > 0:
+                return sids
+
+        except Exception as e:
+            logger.error(f"Error creating vector for document {e}")
+
+    def create_embedding(self, content):
+        embeddings = get_embeddings()
+        return embeddings.embed_query(content)
+
+    def similarity_search(self, query, table="match_summaries", top_k=5, threshold=0.5):
+        query_embedding = self.create_embedding(query)
+        supabase_db = get_supabase_db()
+        summaries = supabase_db.similarity_search(
+            query_embedding, table, top_k, threshold
+        )
+        return summaries.data
+
+
+def error_callback(exception):
+    print("An exception occurred:", exception)
+
 
 def process_batch(batch_ids: List[str]):
     supabase_db = get_supabase_db()

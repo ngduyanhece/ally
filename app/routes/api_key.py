@@ -28,8 +28,7 @@ router = APIRouter()
 @router.post(
     "/api-keys",
     response_model=ApiKey,
-    dependencies=[Depends(AuthBearer())],
-    tags=["API Key"],
+    dependencies=[Depends(AuthBearer())]
 )
 async def create_api_key(
     current_user: UserIdentity = Depends(get_current_user)
@@ -67,7 +66,7 @@ async def create_api_key(
 
 
 @router.delete(
-    "/api-keys/{key_id}", dependencies=[Depends(AuthBearer())], tags=["API Key"]
+    "/api-keys/{key_id}", dependencies=[Depends(AuthBearer())]
 )
 async def delete_api_key(
     key_id: str, current_user: UserIdentity = Depends(get_current_user)
@@ -89,8 +88,7 @@ async def delete_api_key(
 @router.get(
     "/api-keys",
     response_model=List[ApiKeyInfo],
-    dependencies=[Depends(AuthBearer())],
-    tags=["API Key"],
+    dependencies=[Depends(AuthBearer())]
 )
 async def get_api_keys(current_user: UserIdentity = Depends(get_current_user)):
     """

@@ -1,11 +1,21 @@
 from app.models.databases.supabase.api_key_handler import ApiKeyHandler
 from app.models.databases.supabase.brains import Brain
+from app.models.databases.supabase.chats import Chats
+from app.models.databases.supabase.files import File
+from app.models.databases.supabase.knowledge import Knowledges
+from app.models.databases.supabase.notifications import Notifications
 from app.models.databases.supabase.prompts import Prompts
 from app.models.databases.supabase.user_usage import UserUsage
+from app.models.databases.supabase.vectors import Vector
 
 __all__ = [
     "Brain",
     "UserUsage",
     "Prompts",
-    "ApiKeyHandler"
+    "ApiKeyHandler",
+    "Chats",
+    "Notifications",
+    "Knowledges",
+    "Vector",
+    "File"
 ]
