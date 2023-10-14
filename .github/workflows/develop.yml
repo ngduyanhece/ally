@@ -1,0 +1,23 @@
+name: Deploy dev to EC2
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.4.2
+      with:
+        ssh-private-key: ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }}
+
+    - name: Run update script on EC2
+      run: |
+        ssh -i ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }} ubuntu@52.74.55.75 "bash /home/ubuntu/update-script.sh ${{ secrets.GIT_PAT }}"
