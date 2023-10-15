@@ -15,9 +15,9 @@ jobs:
     steps:
     - name: Set up SSH key
       uses: shimataro/ssh-key-action@v2
-      known_hosts: unnecessary
       with:
         key: ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }}
+        known_hosts: unnecessary
 
     - name: Run update script on EC2
       run: |
