@@ -3,7 +3,7 @@ version: '3'
 services:
   backend-core:
     env_file:
-      - ./.env
+      - ./dev.env
     build:
       context: ./
       dockerfile: Dockerfile
@@ -26,7 +26,7 @@ services:
   
   worker:
     env_file:
-      - ./.env
+      - ./dev.env
     build:
       context: ./
       dockerfile: Dockerfile
@@ -41,7 +41,7 @@ services:
     
   flower:
     env_file:
-      - ./.env
+      - ./dev.env
     build:
       context: ./
       dockerfile: Dockerfile

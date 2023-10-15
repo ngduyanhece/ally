@@ -38,13 +38,14 @@ async def get_user_from_api_key(
 
     # Lookup the user_id from the api_keys table
     user_id_data = supabase_db.get_user_id_by_api_key(api_key)
+    user_email_data = supabase_db.get_user_email_by_api_key(api_key)
 
     if not user_id_data.data:
         raise HTTPException(status_code=400, detail="Invalid API key.")
 
     user_id = user_id_data.data[0]["user_id"]
+    email = user_email_data.data[0]["email"]
 
     # Lookup the email from the users table. Todo: remove and use user_id for credentials
-    email = supabase_db.get_user_email(user_id)
 
     return UserIdentity(email=email, id=user_id)

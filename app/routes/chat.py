@@ -1,21 +1,31 @@
 import time
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
+from app.llm.llm_brain import LLMBrain
+from app.models.brain_entity import BrainEntity
+from app.models.brains import Brain
 from app.models.chat import Chat
+from app.models.chats import ChatInput, MetaChatInput
 from app.models.databases.supabase.supabase import SupabaseDB
 from app.models.settings import get_supabase_db
 from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
+from app.repository.brain.get_brain_details import get_brain_details
 from app.repository.chat.create_chat import CreateChatProperties, create_chat
 from app.repository.chat.get_chat_by_id import get_chat_by_id
+from app.repository.chat.get_chat_history import GetChatHistoryOutput
 from app.repository.chat.get_user_chats import get_user_chats
 from app.repository.chat.update_chat import (ChatUpdatableProperties,
                                              update_chat)
 from app.repository.notification.remove_chat_notifications import \
     remove_chat_notifications
+from app.repository.user_identity.get_user_identity import get_user_identity
+from app.routes.authorizations.brain_authorization import \
+    validate_brain_authorization
+from app.routes.authorizations.types import RoleEnum
 
 router = APIRouter()
 
@@ -100,7 +110,7 @@ async def delete_chat(chat_id: UUID):
 
 # update existing chat metadata
 @router.put(
-    "/chats/{chat_id}/metadata", dependencies=[Depends(AuthBearer())], tags=["Chat"]
+    "/chats/{chat_id}/metadata", dependencies=[Depends(AuthBearer())]
 )
 async def update_chat_metadata_handler(
     chat_data: ChatUpdatableProperties,
@@ -130,3 +140,141 @@ async def create_chat_handler(
     """
 
     return create_chat(user_id=current_user.id, chat_data=chat_data)
+
+# add new input to brain to chat
+@router.post(
+    "brain/chat/{chat_id}/question",
+    dependencies=[
+        Depends(
+            AuthBearer(),
+        ),
+    ],
+)
+async def create_brain_chat_input_handler(
+    request: Request,
+    chat_input: ChatInput,
+    chat_id: UUID,
+    brain_id: UUID = Query(..., description="The ID of the brain"),
+    current_user: UserIdentity = Depends(get_current_user),
+) -> GetChatHistoryOutput:
+    """
+    Add a new question to the chat.
+    """
+    if brain_id:
+        validate_brain_authorization(
+            brain_id=brain_id,
+            user_id=current_user.id,
+            required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
+        )
+     # Retrieve user's OpenAI API key
+    current_user.openai_api_key = request.headers.get("Openai-Api-Key")
+    brain = Brain(id=brain_id)
+    brain_details: BrainEntity | None = None
+    userDailyUsage = UserUsage(
+        id=current_user.id,
+        email=current_user.email,
+        openai_api_key=current_user.openai_api_key,
+    )
+    userSettings = userDailyUsage.get_user_settings()
+    is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+    if not current_user.openai_api_key and brain_id:
+        brain_details = get_brain_details(brain_id)
+        if brain_details:
+            current_user.openai_api_key = brain_details.openai_api_key
+
+    if not current_user.openai_api_key:
+        user_identity = get_user_identity(current_user.id)
+
+        if user_identity is not None:
+            current_user.openai_api_key = user_identity.openai_api_key
+    
+    if (
+        not chat_input.model
+        or not chat_input.temperature
+        or not chat_input.max_tokens
+    ):
+        # TODO: create ChatConfig class (pick config from brain or user or chat) and use it here
+        chat_input.model = chat_input.model or brain.model or "gpt-3.5-turbo"
+        chat_input.temperature = (
+            chat_input.temperature or brain.temperature or 0.1
+        )
+        chat_input.max_tokens = chat_input.max_tokens or brain.max_tokens or 256
+    
+    try:
+        #TODO: improve the user request limit 
+        # check_user_requests_limit(current_user)
+        is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+        gpt_answer_generator = LLMBrain(
+                chat_id=str(chat_id),
+                model=chat_input.model if is_model_ok else "gpt-3.5-turbo",  # type: ignore
+                max_tokens=chat_input.max_tokens,
+                temperature=chat_input.temperature,
+                brain_id=str(brain_id),
+                user_openai_api_key=current_user.openai_api_key,  # pyright: ignore reportPrivateUsage=none
+                prompt_id=str(chat_input.prompt_id),
+        )
+        chat_answer = gpt_answer_generator.generate_answer(chat_id, chat_input)
+        return chat_answer
+    except HTTPException as e:
+        raise e
+    
+
+@router.post(
+    "metabrain/chat/{chat_id}/question",
+    dependencies=[
+        Depends(
+            AuthBearer(),
+        ),
+    ],
+)
+async def create_meta_brain_chat_input_handler(
+    request: Request,
+    chat_input: MetaChatInput,
+    chat_id: UUID,
+    meta_brain_id: UUID = Query(..., description="The ID of the meta brain"),
+    current_user: UserIdentity = Depends(get_current_user),
+) -> GetChatHistoryOutput:
+    """
+    Add a new question to the meta brain to chat.
+    """
+    if meta_brain_id:
+        validate_meta_brain_authorization(
+            meta_brain_id=meta_brain_id,
+            user_id=current_user.id,
+            required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
+        )
+    current_user.openai_api_key = request.headers.get("Openai-Api-Key")
+    meta_brain = MetaBrain(id=meta_brain_id)
+    meta_brain_details: MetaBrainEntity | None = None
+    userDailyUsage = UserUsage(
+        id=current_user.id,
+        email=current_user.email,
+        openai_api_key=current_user.openai_api_key,
+    )
+    userSettings = userDailyUsage.get_user_settings()
+    is_model_ok = (meta_brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+    if not current_user.openai_api_key and meta_brain_id:
+        meta_brain_details = get_meta_brain_details(meta_brain_id)
+        if meta_brain_details:
+            current_user.openai_api_key = meta_brain_details.openai_api_key
+
+    if not current_user.openai_api_key:
+        user_identity = get_user_identity(current_user.id)
+
+        if user_identity is not None:
+            current_user.openai_api_key = user_identity.openai_api_key
+    
+    if (
+        not chat_input.model or not chat_input.temperature
+            or not chat_input.max_tokens
+    ):
+        chat_input.model = chat_input.model or meta_brain_details.model or "gpt-3.5-turbo"
+        chat_input.temperature = (
+            chat_input.temperature or meta_brain_details.temperature or 0.1
+        )
+        chat_input.max_tokens = chat_input.max_tokens or meta_brain_details.max_tokens or 256
+    
+    is_model_ok = (meta_brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+
+
+

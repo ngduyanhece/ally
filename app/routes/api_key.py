@@ -51,7 +51,7 @@ async def create_api_key(
     while not api_key_inserted:
         try:
             # Attempt to insert new API key into database
-            supabase_db.create_api_key(new_key_id, new_api_key, current_user.id)
+            supabase_db.create_api_key(new_key_id, new_api_key, current_user.id, current_user.email)
             api_key_inserted = True
 
         except UniqueViolationError:

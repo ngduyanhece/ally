@@ -8,7 +8,7 @@ from app.repository.user_identity.create_user_identity import \
 logger = get_logger()
 
 
-def get_user_identity(user_id: UUID) -> UserIdentity:
+def get_user_identity(user_id: UUID, user_email: str) -> UserIdentity:
     supabase_client = get_supabase_client()
     response = (
         supabase_client.from_("user_identity")
@@ -18,9 +18,10 @@ def get_user_identity(user_id: UUID) -> UserIdentity:
     )
 
     if len(response.data) == 0:
-        return create_user_identity(user_id, openai_api_key=None)
+        return create_user_identity(user_id, openai_api_key=None, email=user_email)
 
     user_identity = response.data[0]
     openai_api_key = user_identity["openai_api_key"]
+    user_email = user_identity["email"]
 
-    return UserIdentity(id=user_id, openai_api_key=openai_api_key)
+    return UserIdentity(id=user_id, openai_api_key=openai_api_key, email=user_email)
