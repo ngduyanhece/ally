@@ -20,4 +20,4 @@ jobs:
 
     - name: Run update script on EC2
       run: |
-        ssh -i ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }} ubuntu@52.74.55.75 "bash /home/ubuntu/update-script.sh ${{ secrets.GIT_PAT }}"
+        ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }} ubuntu@52.74.55.75 "bash /home/ubuntu/update-script.sh ${{ secrets.GIT_PAT }}"
