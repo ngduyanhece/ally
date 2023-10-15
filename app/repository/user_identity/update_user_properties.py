@@ -19,6 +19,7 @@ class UserUpdatableProperties(BaseModel):
 
 def update_user_properties(
     user_id: UUID,
+    user_email: str,
     user_identity_updatable_properties: UserUpdatableProperties,
 ) -> UserIdentity:
     supabase_client = get_supabase_client()
@@ -37,4 +38,4 @@ def update_user_properties(
     user_identity = response.data[0]
     openai_api_key = user_identity["openai_api_key"]
 
-    return UserIdentity(id=user_id, openai_api_key=openai_api_key)
+    return UserIdentity(id=user_id, openai_api_key=openai_api_key, email=user_email)

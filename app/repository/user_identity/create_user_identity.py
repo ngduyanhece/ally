@@ -4,7 +4,7 @@ from uuid import UUID
 from app.models import UserIdentity, get_supabase_client
 
 
-def create_user_identity(id: UUID, openai_api_key: Optional[str]) -> UserIdentity:
+def create_user_identity(id: UUID, openai_api_key: Optional[str], email: Optional[str]) -> UserIdentity:
     supabase_client = get_supabase_client()
 
     response = (
@@ -13,11 +13,14 @@ def create_user_identity(id: UUID, openai_api_key: Optional[str]) -> UserIdentit
             {
                 "user_id": str(id),
                 "openai_api_key": openai_api_key,
+                "email": email,
             }
         )
         .execute()
     )
     user_identity = response.data[0]
     return UserIdentity(
-        id=user_identity.user_id, openai_api_key=user_identity.openai_api_key  # type: ignore
+        id=user_identity["user_id"],
+        openai_api_key=user_identity["openai_api_key"],
+        email=user_identity["email"],
     )

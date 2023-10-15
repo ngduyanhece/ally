@@ -3,14 +3,16 @@ import time
 from fastapi import APIRouter, Depends, Request
 
 from app.auth import AuthBearer, get_current_user
+from app.logger import get_logger
 from app.models import Brain, UserIdentity, UserUsage
 from app.repository.brain import get_user_default_brain
-from app.repository.user_identity import get_user_identity, sign_in_user
+from app.repository.user_identity import sign_in_user
+from app.repository.user_identity.get_user_identity import get_user_identity
 from app.repository.user_identity.update_user_properties import (
     UserSignInProperties, UserUpdatableProperties, update_user_properties)
 
 router = APIRouter()
-
+logger = get_logger(__name__)
 
 @router.get("/user", dependencies=[Depends(AuthBearer())])
 async def get_user_endpoint(
@@ -71,13 +73,17 @@ def update_user_identity_route(
     """
     Update user identity.
     """
+    logger.info(
+        f"Updating user identity for user {current_user}."
+    )
     return update_user_properties(
-        current_user.id, user_identity_updatable_properties)
+        current_user.id, current_user.email, user_identity_updatable_properties)
 
 
 @router.get(
     "/user/identity",
     dependencies=[Depends(AuthBearer())],
+    tags=["User"],
 )
 def get_user_identity_route(
     current_user: UserIdentity = Depends(get_current_user),
@@ -85,7 +91,10 @@ def get_user_identity_route(
     """
     Get user identity.
     """
-    return get_user_identity(current_user.id)
+    logger.info(
+        f"Getting user identity for user {current_user}."
+    )
+    return get_user_identity(current_user.id, current_user.email)
 
 @router.post("/user")
 def sign_in_route(

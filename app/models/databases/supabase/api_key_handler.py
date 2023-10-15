@@ -8,7 +8,7 @@ class ApiKeyHandler(Repository):
     def __init__(self, supabase_client):
         self.db = supabase_client  # type: ignore
 
-    def create_api_key(self, new_key_id, new_api_key, user_id):
+    def create_api_key(self, new_key_id, new_api_key, user_id, user_email):
         response = (
             self.db.table("api_keys")
             .insert(
@@ -17,6 +17,7 @@ class ApiKeyHandler(Repository):
                         "key_id": str(new_key_id),
                         "user_id": str(user_id),
                         "api_key": str(new_api_key),
+                        "email": str(user_email),
                         "creation_time": datetime.utcnow().strftime(
                             "%Y-%m-%d %H:%M:%S"
                         ),
@@ -55,6 +56,15 @@ class ApiKeyHandler(Repository):
         response = (
             self.db.table("api_keys")
             .select("user_id")
+            .filter("api_key", "eq", api_key)
+            .execute()
+        )
+        return response
+    
+    def get_user_email_by_api_key(self, api_key: str):
+        response = (
+            self.db.table("api_keys")
+            .select("email")
             .filter("api_key", "eq", api_key)
             .execute()
         )
