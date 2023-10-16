@@ -4,8 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.logger import get_logger
-from app.models.brain_entity import (BrainEntity, MinimalBrainEntity,
-                                     PublicBrain)
+from app.models.brain_entity import (BrainEntity, InfosBrainEntity,
+                                     MinimalBrainEntity, PublicBrain)
 from app.models.databases.repository import Repository
 
 logger = get_logger(__name__)
@@ -328,3 +328,38 @@ class Brain(Repository):
         if len(response) == 0:
             raise ValueError(f"Brain with id {brain_id} does not exist.")
         return response[0]["count"]
+    
+    def create_brain_meta_brain(self, brain_id: UUID, meta_brain_id):
+        response = (
+            self.db.table("brains_meta_brains")
+            .insert(
+                {
+                    "brain_id": str(brain_id),
+                    "meta_brain_id": str(meta_brain_id)
+                }
+            )
+            .execute()
+        )
+
+        return response
+    
+    def get_brain_for_meta_brain(self, meta_brain_id) -> list[InfosBrainEntity] | None:
+        response = (
+            self.db.from_("brains_meta_brains")
+            .select("id:brain_id, brains (id: brain_id, status, name, description, temperature, model, max_tokens, openai_api_key)")
+            .filter("meta_brain_id", "eq", meta_brain_id)
+            .execute()
+        )
+        infosbrains: list[InfosBrainEntity] = []
+        for item in response.data:
+            infosbrain = InfosBrainEntity(
+                id=item["brains"]["id"],
+                name=item["brains"]["name"],
+                description=item["brains"]["description"],
+                temperature=item["brains"]["temperature"],
+                model=item["brains"]["model"],
+                max_tokens=item["brains"]["max_tokens"],
+                openai_api_key=item["brains"]["openai_api_key"]
+            )
+            infosbrains.append(infosbrain)
+        return infosbrains

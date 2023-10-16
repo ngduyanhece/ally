@@ -32,7 +32,7 @@ class LLMMetaBrain(BaseModel):
         super().__init__(**data)
 
         self.openai_api_key = self._determine_api_key(
-            self.brain_settings.openai_api_key, self.user_openai_api_key
+            self.meta_brain_settings.openai_api_key, self.user_openai_api_key
         )
     
     class Config:
@@ -67,23 +67,28 @@ class LLMMetaBrain(BaseModel):
             tools.append(
                 Tool.from_function(
                     func=brain_info["tool"](
-                        **brain_info["tool_config"]).generate_answer,
+                        **brain_info["tool_config"]).agent_chat_interface,
                     name=brain_info["name"],
                     description=brain_info["description"],
                     args_schema=brain_info["args_schema"],
+                    return_direct=True
                 )
             )
         return tools
 
-    def _create_policy(self):
+    def _create_policy(self, model, temperature=0.9, max_tokens=256):
         llm = self._create_llm(
-            model=self.model,
-            temperature=self.temperature,  # type: ignore
-            max_tokens=self.max_tokens,
+            model=model,
+            temperature=temperature,  # type: ignore
+            max_tokens=max_tokens,
         )
         tools = self._create_tools()
         agent = initialize_agent(
-            tools, llm, agent=AgentType.OPENAI_MULTI_FUNCTIONS
+            tools,
+            llm,
+            agent=AgentType.OPENAI_FUNCTIONS,
+            verbose=True,
+            max_execution_time=1,
         )
         return agent
     
@@ -91,7 +96,11 @@ class LLMMetaBrain(BaseModel):
         self, chat_id: UUID,
         chat_input: MetaChatInput
     ) -> Dict[str, Any]:
-        agent_policy = self._create_policy()
+        agent_policy = self._create_policy(
+            model=chat_input.model if chat_input.model is not None else self.model,
+            temperature=chat_input.temperature if chat_input.temperature is not None else self.temperature,
+            max_tokens=chat_input.max_tokens if chat_input.max_tokens is not None else self.max_tokens
+        )
         answer = agent_policy(
             {
                 "input": chat_input.chat_input,
