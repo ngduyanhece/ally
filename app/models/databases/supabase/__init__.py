@@ -3,6 +3,7 @@ from app.models.databases.supabase.brains import Brain
 from app.models.databases.supabase.chats import Chats
 from app.models.databases.supabase.files import File
 from app.models.databases.supabase.knowledge import Knowledges
+from app.models.databases.supabase.meta_brains import MetaBrain
 from app.models.databases.supabase.notifications import Notifications
 from app.models.databases.supabase.prompts import Prompts
 from app.models.databases.supabase.user_usage import UserUsage
@@ -10,6 +11,7 @@ from app.models.databases.supabase.vectors import Vector
 
 __all__ = [
     "Brain",
+    "MetaBrain",
     "UserUsage",
     "Prompts",
     "ApiKeyHandler",

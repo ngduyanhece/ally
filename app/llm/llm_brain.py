@@ -149,7 +149,7 @@ class LLMBrain(LLMBase):
         else:
             model_response = qa(
                 {
-                    "question": chat_input.chat_input,
+                    "question":chat_input.chat_input,
                     "chat_history": "",
                 }
             )
@@ -160,7 +160,7 @@ class LLMBrain(LLMBase):
                     "chat_id": chat_id,
                     "user_message": chat_input.chat_input,
                     "assistant": answer,
-                    "brain_id": chat_input.brain_id,
+                    "brain_id": self.brain_id if self.brain_id else chat_input.brain_id,
                     "prompt_id": self.prompt_to_use_id,
                 }
             )
@@ -181,6 +181,73 @@ class LLMBrain(LLMBase):
                 if self.prompt_to_use
                 else None,
                 "brain_name": brain.name if brain else None,
+                "message_id": new_chat.message_id,
+            }
+        )
+    
+    def agent_chat_interface(
+        self, chat_input: str, use_history: bool = True
+    ) -> GetChatHistoryOutput:
+        transformed_history = format_chat_history(
+            get_chat_history(self.chat_id))
+        
+        answering_llm = self._create_llm(
+            model=self.model, streaming=False, callbacks=self.callbacks
+        )
+
+        doc_chain = load_qa_chain(
+            answering_llm, chain_type="stuff",
+            prompt=self._create_prompt_template()
+        )
+        qa = ConversationalRetrievalChain(
+            retriever=self.vector_store.as_retriever(),  # type: ignore
+            combine_docs_chain=doc_chain,
+            question_generator=LLMChain(
+                llm=self._create_llm(model=self.model),
+                prompt=CONDENSE_QUESTION_PROMPT
+            ),
+            verbose=False,
+            rephrase_question=False,
+        )
+        if(use_history):
+            model_response = qa(
+                {
+                    "question": chat_input,
+                    "chat_history": transformed_history,
+                }
+            )
+        else:
+            model_response = qa(
+                {
+                    "question": chat_input,
+                    "chat_history": "",
+                }
+            )
+        answer = model_response["answer"]
+        new_chat = update_chat_history(
+            CreateChatHistory(
+                **{
+                    "chat_id": self.chat_id,
+                    "user_message": chat_input,
+                    "assistant": answer,
+                    "brain_id": self.brain_id,
+                    "prompt_id": self.prompt_to_use_id,
+                }
+            )
+        )
+
+        brain = get_brain_by_id(self.brain_id)
+
+        return GetChatHistoryOutput(
+            **{
+                "chat_id": self.chat_id,
+                "user_message": chat_input,
+                "assistant": answer,
+                "message_time": new_chat.message_time,
+                "prompt_title": self.prompt_to_use.title
+                if self.prompt_to_use
+                else None,
+                "brain_name": brain.name,
                 "message_id": new_chat.message_id,
             }
         )

@@ -14,12 +14,16 @@ from app.repository.brain import (create_brain, create_brain_user,
                                   get_public_brains, get_user_brains,
                                   get_user_default_brain,
                                   set_as_default_brain_for_user)
+from app.repository.brain.create_brain_meta_brain import \
+    create_brain_meta_brain
 from app.repository.brain.delete_brain_user import delete_brain_user
 from app.repository.brain.update_brain import update_brain_by_id
 from app.repository.prompt.delete_prompt_py_id import delete_prompt_by_id
 from app.repository.prompt.get_prompt_by_id import get_prompt_by_id
 from app.routes.authorizations.brain_authorization import \
     has_brain_authorization
+from app.routes.authorizations.meta_brain_authorization import \
+    has_meta_brain_authorization
 from app.routes.authorizations.types import RoleEnum
 
 logger = get_logger(__name__)
@@ -220,5 +224,26 @@ async def set_as_default_brain_endpoint(
     set_as_default_brain_for_user(user.id, brain_id)
 
     return {"message": f"Brain {brain_id} has been set as default brain."}
+
+# create a relation between brain and meta brain
+@router.post(
+    "/brains/{brain_id}/{meta_brain_id}",
+    dependencies=[
+        Depends(
+            AuthBearer(),
+        ),
+        Depends(has_brain_authorization()),
+        Depends(has_meta_brain_authorization()),
+    ],
+)
+async def set_brain_meta_brain(
+    brain_id: UUID,
+    meta_brain_id: UUID,
+):
+    """
+    Set a brain and meta brain relation.
+    """
+    create_brain_meta_brain(brain_id, meta_brain_id)
+    return {"message": f"set the relation for meta brain {meta_brain_id} and brain {brain_id}"}
 
 #TODO: get question context from brain

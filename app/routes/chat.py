@@ -5,11 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.llm.llm_brain import LLMBrain
+from app.llm.llm_meta_brain import LLMMetaBrain
+from app.llm.utils.get_brains_infos_for_meta_brain import \
+    get_brain_infos_for_meta_brain
 from app.models.brain_entity import BrainEntity
 from app.models.brains import Brain
 from app.models.chat import Chat
 from app.models.chats import ChatInput, MetaChatInput
 from app.models.databases.supabase.supabase import SupabaseDB
+from app.models.meta_brain_entity import MetaBrainEntity
 from app.models.settings import get_supabase_db
 from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
@@ -20,11 +24,15 @@ from app.repository.chat.get_chat_history import GetChatHistoryOutput
 from app.repository.chat.get_user_chats import get_user_chats
 from app.repository.chat.update_chat import (ChatUpdatableProperties,
                                              update_chat)
+from app.repository.meta_brain.get_meta_brain_details import \
+    get_meta_brain_details
 from app.repository.notification.remove_chat_notifications import \
     remove_chat_notifications
 from app.repository.user_identity.get_user_identity import get_user_identity
 from app.routes.authorizations.brain_authorization import \
     validate_brain_authorization
+from app.routes.authorizations.meta_brain_authorization import \
+    validate_meta_brain_authorization
 from app.routes.authorizations.types import RoleEnum
 
 router = APIRouter()
@@ -143,7 +151,7 @@ async def create_chat_handler(
 
 # add new input to brain to chat
 @router.post(
-    "brain/chat/{chat_id}/question",
+    "/brain/chat/{chat_id}/question",
     dependencies=[
         Depends(
             AuthBearer(),
@@ -204,7 +212,7 @@ async def create_brain_chat_input_handler(
         #TODO: improve the user request limit 
         # check_user_requests_limit(current_user)
         is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
-        gpt_answer_generator = LLMBrain(
+        llm_brain = LLMBrain(
                 chat_id=str(chat_id),
                 model=chat_input.model if is_model_ok else "gpt-3.5-turbo",  # type: ignore
                 max_tokens=chat_input.max_tokens,
@@ -213,14 +221,14 @@ async def create_brain_chat_input_handler(
                 user_openai_api_key=current_user.openai_api_key,  # pyright: ignore reportPrivateUsage=none
                 prompt_id=str(chat_input.prompt_id),
         )
-        chat_answer = gpt_answer_generator.generate_answer(chat_id, chat_input)
+        chat_answer = llm_brain.generate_answer(chat_id, chat_input)
         return chat_answer
     except HTTPException as e:
         raise e
     
 
 @router.post(
-    "metabrain/chat/{chat_id}/question",
+    "/metabrain/chat/{chat_id}/question",
     dependencies=[
         Depends(
             AuthBearer(),
@@ -233,7 +241,7 @@ async def create_meta_brain_chat_input_handler(
     chat_id: UUID,
     meta_brain_id: UUID = Query(..., description="The ID of the meta brain"),
     current_user: UserIdentity = Depends(get_current_user),
-) -> GetChatHistoryOutput:
+):
     """
     Add a new question to the meta brain to chat.
     """
@@ -244,7 +252,6 @@ async def create_meta_brain_chat_input_handler(
             required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
         )
     current_user.openai_api_key = request.headers.get("Openai-Api-Key")
-    meta_brain = MetaBrain(id=meta_brain_id)
     meta_brain_details: MetaBrainEntity | None = None
     userDailyUsage = UserUsage(
         id=current_user.id,
@@ -252,7 +259,6 @@ async def create_meta_brain_chat_input_handler(
         openai_api_key=current_user.openai_api_key,
     )
     userSettings = userDailyUsage.get_user_settings()
-    is_model_ok = (meta_brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
     if not current_user.openai_api_key and meta_brain_id:
         meta_brain_details = get_meta_brain_details(meta_brain_id)
         if meta_brain_details:
@@ -275,6 +281,17 @@ async def create_meta_brain_chat_input_handler(
         chat_input.max_tokens = chat_input.max_tokens or meta_brain_details.max_tokens or 256
     
     is_model_ok = (meta_brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+    llm_meta_brain = LLMMetaBrain(
+        chat_id=str(chat_id),
+        model=chat_input.model if is_model_ok else "gpt-3.5-turbo",  # type: ignore
+        max_tokens=chat_input.max_tokens,
+        temperature=chat_input.temperature,
+        meta_brain_id=str(meta_brain_id),
+        user_openai_api_key=current_user.openai_api_key,
+        brains_infos=get_brain_infos_for_meta_brain(meta_brain_id, str(chat_id)),
+    )
+    chat_answer = llm_meta_brain.generate_answer(chat_id, chat_input)
+    return chat_answer
 
 
 
