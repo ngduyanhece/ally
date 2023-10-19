@@ -3,12 +3,14 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.logger import get_logger
+from app.models.brain_entity import MinimalBrainEntity
 from app.models.databases.repository import Repository
 from app.models.meta_brain_entity import (MetaBrainEntity,
                                           MinimalMetaBrainEntity,
                                           PublicMetaBrain)
 
-
+logger = get_logger(__name__)
 class CreateMetaBrainProperties(BaseModel):
     name: Optional[str] = "Default meta brain"
     description: Optional[str] = "This is a meta brain description"
@@ -189,3 +191,34 @@ class MetaBrain(Repository):
     def update_meta_brain_last_update_time(self, meta_brain_id: UUID) -> None:
         self.db.table("meta_brains").update({"last_update": "now()"}). \
             match({"meta_brain_id": meta_brain_id}).execute()
+        
+    def get_meta_brain_brains(self, meta_brain_id: UUID, user_id: UUID) -> None:
+        response = (
+            self.db.from_("brains_meta_brains")
+            .select("id:brain_id")
+            .filter("meta_brain_id", "eq", meta_brain_id)
+            .execute()
+        )
+        brain_ids = [item["id"] for item in response.data] 
+        response = (
+            self.db.from_("brains_users")
+            .select("id:brain_id, rights, brains (brain_id, name, status)")
+            .filter("user_id", "eq", user_id)
+            .in_("brain_id", brain_ids)
+            .execute()
+        )
+        user_brains: list[MinimalBrainEntity] = []
+        for item in response.data:
+            user_brains.append(
+                MinimalBrainEntity(
+                    id=item["brains"]["brain_id"],
+                    name=item["brains"]["name"],
+                    rights=item["rights"],
+                    status=item["brains"]["status"],
+                )
+            )
+            user_brains[-1].rights = item["rights"]
+        return user_brains
+        
+        
+

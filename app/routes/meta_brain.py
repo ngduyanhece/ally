@@ -58,7 +58,7 @@ async def public_meta_brains_endpoint() -> list[PublicMetaBrain]:
     """
     return get_public_meta_brains()
 
-# get default brain
+# get default meta brain
 @router.get(
     "/meta_brains/default/", dependencies=[Depends(AuthBearer())])
 async def get_default_meta_brain_endpoint(

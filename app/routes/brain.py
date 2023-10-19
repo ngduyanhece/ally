@@ -6,7 +6,8 @@ from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.logger import get_logger
 from app.models import UserIdentity, UserUsage
 from app.models.brain_entity import PublicBrain
-from app.models.databases.supabase.brains import (BrainUpdatableProperties,
+from app.models.databases.supabase.brains import (BrainInputRequest,
+                                                  BrainUpdatableProperties,
                                                   CreateBrainProperties)
 from app.repository.brain import (create_brain, create_brain_user,
                                   get_brain_details,
@@ -246,4 +247,24 @@ async def set_brain_meta_brain(
     create_brain_meta_brain(brain_id, meta_brain_id)
     return {"message": f"set the relation for meta brain {meta_brain_id} and brain {brain_id}"}
 
-#TODO: get question context from brain
+@router.post(
+    "/brains/{brain_id}/question_context",
+    dependencies=[
+        Depends(
+            AuthBearer(),
+        ),
+        Depends(has_brain_authorization()),
+    ],
+    tags=["Brain"],
+)
+async def get_question_context_from_brain_endpoint(
+    brain_id: UUID,
+    request: BrainInputRequest,
+):
+    """
+    Get question context from brain
+    """
+
+    context = get_question_context_from_brain(brain_id, request.question)
+
+    return {"context": context}
