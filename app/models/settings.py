@@ -13,8 +13,8 @@ class BrainSettings(BaseSettings):
     supabase_url: str
     supabase_service_key: str
     pg_database_url: str = "not implemented"
-    resend_api_key: str = "null"
-    resend_email_address: str = "andy@open-lab.io"
+    resend_api_key: str = "re_C2E5atQy_45Kmu4pkx1rrqscRML9BThFE"
+    resend_email_address: str = "onboarding@resend.dev"
 
 
 def get_supabase_client() -> Client:
