@@ -1,4 +1,5 @@
 import time
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -21,6 +22,8 @@ from app.repository.brain.get_brain_details import get_brain_details
 from app.repository.chat.create_chat import CreateChatProperties, create_chat
 from app.repository.chat.get_chat_by_id import get_chat_by_id
 from app.repository.chat.get_chat_history import GetChatHistoryOutput
+from app.repository.chat.get_chat_history_with_notifications import (
+    ChatItem, get_chat_history_with_notifications)
 from app.repository.chat.get_user_chats import get_user_chats
 from app.repository.chat.update_chat import (ChatUpdatableProperties,
                                              update_chat)
@@ -292,6 +295,16 @@ async def create_meta_brain_chat_input_handler(
     )
     chat_answer = llm_meta_brain.generate_answer(chat_id, chat_input)
     return chat_answer
+
+# get chat history
+@router.get(
+    "/chats/{chat_id}/history", dependencies=[Depends(AuthBearer())]
+)
+async def get_chat_history_handler(
+    chat_id: UUID,
+) -> List[ChatItem]:
+    # TODO: RBAC with current_user
+    return get_chat_history_with_notifications(chat_id)
 
 
 
