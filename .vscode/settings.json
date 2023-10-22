@@ -46,6 +46,7 @@
   "python.defaultInterpreterPath": "python3",
   "python.linting.flake8CategorySeverity.W": "Error",
   "cSpell.words": [
+    "acall",
     "aiter",
     "CELEBRY",
     "COREAPPSETTING",

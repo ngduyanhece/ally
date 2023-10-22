@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.llm.llm_brain import LLMBrain
@@ -296,6 +297,88 @@ async def create_meta_brain_chat_input_handler(
     chat_answer = llm_meta_brain.generate_answer(chat_id, chat_input)
     return chat_answer
 
+# stream new question response from chat
+@router.post(
+    "/brain/chat/{chat_id}/question/stream",
+    dependencies=[
+        Depends(
+            AuthBearer(),
+        ),
+    ]
+)
+async def create_stream_question_handler(
+    request: Request,
+    chat_input: ChatInput,
+    chat_id: UUID,
+    brain_id: UUID = Query(..., description="The ID of the brain"),
+    current_user: UserIdentity = Depends(get_current_user),
+) -> StreamingResponse:
+    """
+    Add a new question to the chat.
+    """
+    if brain_id:
+        validate_brain_authorization(
+            brain_id=brain_id,
+            user_id=current_user.id,
+            required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
+        )
+     # Retrieve user's OpenAI API key
+    current_user.openai_api_key = request.headers.get("Openai-Api-Key")
+    brain = Brain(id=brain_id)
+    brain_details: BrainEntity | None = None
+    userDailyUsage = UserUsage(
+        id=current_user.id,
+        email=current_user.email,
+        openai_api_key=current_user.openai_api_key,
+    )
+    userSettings = userDailyUsage.get_user_settings()
+    is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+    if not current_user.openai_api_key and brain_id:
+        brain_details = get_brain_details(brain_id)
+        if brain_details:
+            current_user.openai_api_key = brain_details.openai_api_key
+
+    if not current_user.openai_api_key:
+        user_identity = get_user_identity(current_user.id)
+
+        if user_identity is not None:
+            current_user.openai_api_key = user_identity.openai_api_key
+    
+    if (
+        not chat_input.model
+        or not chat_input.temperature
+        or not chat_input.max_tokens
+    ):
+        # TODO: create ChatConfig class (pick config from brain or user or chat) and use it here
+        chat_input.model = chat_input.model or brain.model or "gpt-3.5-turbo"
+        chat_input.temperature = (
+            chat_input.temperature or brain.temperature or 0.1
+        )
+        chat_input.max_tokens = chat_input.max_tokens or brain.max_tokens or 256
+    
+    try:
+        #TODO: improve the user request limit 
+        # check_user_requests_limit(current_user)
+        is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
+        llm_brain = LLMBrain(
+                chat_id=str(chat_id),
+                model=chat_input.model if is_model_ok else "gpt-3.5-turbo",  # type: ignore
+                max_tokens=chat_input.max_tokens,
+                temperature=chat_input.temperature,
+                brain_id=str(brain_id),
+                user_openai_api_key=current_user.openai_api_key,  # pyright: ignore reportPrivateUsage=none
+                prompt_id=str(chat_input.prompt_id),
+        )
+        return StreamingResponse(
+            llm_brain.generate_answer_stream(chat_id, chat_input),
+            media_type="text/event-stream",
+        )
+
+    except HTTPException as e:
+        raise e
+
+
+
 # get chat history
 @router.get(
     "/chats/{chat_id}/history", dependencies=[Depends(AuthBearer())]
@@ -305,6 +388,4 @@ async def get_chat_history_handler(
 ) -> List[ChatItem]:
     # TODO: RBAC with current_user
     return get_chat_history_with_notifications(chat_id)
-
-
 
