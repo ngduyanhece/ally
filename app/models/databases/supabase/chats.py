@@ -90,6 +90,15 @@ class Chats(Repository):
 
         return response
 
+    def get_message_by_id(self, message_id):
+        response = (
+            self.db.from_("chat_history")
+            .select("*")
+            .filter("message_id", "eq", message_id)
+            .execute()
+        )
+        return response
+
     def get_chat_details(self, chat_id):
         response = (
             self.db.from_("chats")

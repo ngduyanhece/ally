@@ -1,6 +1,6 @@
 from app.logger import get_logger
-from app.models.databases.supabase import (ApiKeyHandler, Brain, Chats, File,
-                                           Knowledges, MetaBrain,
+from app.models.databases.supabase import (ApiKeyHandler, Brain, Chats, Emoji,
+                                           File, Knowledges, MetaBrain,
                                            Notifications, Prompts, UserUsage,
                                            Vector)
 
@@ -16,7 +16,8 @@ class SupabaseDB(
     Notifications,
     Knowledges,
     Vector,
-    File
+    File,
+    Emoji
 ):
 
     def __init__(self, supabase_client):
@@ -31,3 +32,4 @@ class SupabaseDB(
         Knowledges.__init__(self, supabase_client)
         Vector.__init__(self, supabase_client)
         File.__init__(self, supabase_client)
+        Emoji.__init__(self, supabase_client)
