@@ -1,6 +1,7 @@
 from app.models.databases.supabase.api_key_handler import ApiKeyHandler
 from app.models.databases.supabase.brains import Brain
 from app.models.databases.supabase.chats import Chats
+from app.models.databases.supabase.emoji import Emoji
 from app.models.databases.supabase.files import File
 from app.models.databases.supabase.knowledge import Knowledges
 from app.models.databases.supabase.meta_brains import MetaBrain
@@ -19,5 +20,6 @@ __all__ = [
     "Notifications",
     "Knowledges",
     "Vector",
-    "File"
+    "File",
+    "Emoji"
 ]

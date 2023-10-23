@@ -315,7 +315,7 @@ class LLMBrain(LLMBase):
             verbose=False,
             rephrase_question=False,
         )
-        if(use_history):
+        if (use_history):
             model_response = qa(
                 {
                     "question": chat_input,
