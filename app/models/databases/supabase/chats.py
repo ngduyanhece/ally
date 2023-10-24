@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.models.chats import MessageLabel, MessageLabelOutput
 from app.models.databases.repository import Repository
 
 
@@ -12,7 +13,6 @@ class CreateChatHistory(BaseModel):
     assistant: str
     prompt_id: Optional[UUID]
     brain_id: Optional[UUID]
-
 
 class Chats(Repository):
     def __init__(self, supabase_client):
@@ -113,3 +113,66 @@ class Chats(Repository):
 
     def delete_chat_history(self, chat_id):
         self.db.table("chat_history").delete().match({"chat_id": chat_id}).execute()
+    
+    def create_message_label_by_id(
+        self, message_label: MessageLabel, message_id, user_id
+    ) -> MessageLabel:
+        response = (
+            self.db.from_("label")
+            .insert(
+                {
+                    "message_id": str(message_id),
+                    "user_id": str(user_id),
+                    "label": message_label.label,
+                    "feedback": message_label.feedback,
+                }
+            )
+            .execute()
+        )
+
+        return MessageLabel(**response.data[0])
+    
+    def update_message_label_by_id(
+        self, message_label: MessageLabel, message_id, user_id
+    ) -> MessageLabel:
+        response = (
+            self.db.from_("label")
+            .update(
+                {
+                    "label": message_label.label,
+                    "feedback": message_label.feedback,
+                }
+            )
+            .filter("message_id", "eq", message_id)
+            .filter("user_id", "eq", user_id)
+            .execute()
+        )
+
+        return MessageLabel(**response.data[0])
+    
+    def delete_message_label_by_id(
+        self, message_id, user_id
+    ):
+        response = (
+            self.db.from_("label")
+            .delete()
+            .filter("message_id", "eq", message_id)
+            .filter("user_id", "eq", user_id)
+            .execute()
+        )
+
+        return response
+    
+    def get_message_label_by_id(self, message_id: UUID) -> MessageLabelOutput | None:
+        response = (
+            self.db.from_("label")
+            .select("*")
+            .filter("message_id", "eq", message_id)
+            .execute()
+        ).data
+
+        if response == []:
+            return None
+
+        return MessageLabelOutput(**response[0])
+    

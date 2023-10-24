@@ -32,3 +32,16 @@ class MetaChatInput(BaseModel):
     temperature: Optional[float]
     max_tokens: Optional[int]
     meta_brain_id: Optional[UUID]
+
+
+class MessageLabel(BaseModel):
+    label: Optional[str]
+    feedback: Optional[str]
+
+class MessageLabelOutput(BaseModel):
+    message_id: Optional[str]
+    user_id: Optional[str]
+    label: Optional[str]
+    feedback: Optional[str]
+
+
