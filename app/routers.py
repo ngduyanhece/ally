@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.routes import (api_key, brain, brain_subscription, chat, emoji,
                         explore, health, knowledge, label, meta_brain,
-                        notification, prompt, upload, user)
+                        notification, prompt, test, upload, user)
 
 router = APIRouter()
 router.include_router(user.router, prefix="", tags=["User"])
@@ -19,3 +19,5 @@ router.include_router(notification.router, prefix="", tags=["Notification"])
 router.include_router(brain_subscription.router, prefix="", tags=["BrainSubscription"])
 router.include_router(emoji.router, prefix="", tags=["Emoji"])
 router.include_router(label.router, prefix="", tags=["Label"])
+router.include_router(test.router, prefix="", tags=["Test"])
+
