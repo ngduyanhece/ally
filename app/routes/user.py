@@ -46,14 +46,14 @@ async def get_user_endpoint(
     default_brain = get_user_default_brain(current_user.id)
 
     if default_brain:
-        defaul_brain_size = Brain(id=default_brain.brain_id).brain_size
+        default_brain_size = Brain(id=default_brain.brain_id).brain_size
     else:
-        defaul_brain_size = 0
+        default_brain_size = 0
 
     return {
         "email": current_user.email,
         "max_brain_size": max_brain_size,
-        "current_brain_size": defaul_brain_size,
+        "current_brain_size": default_brain_size,
         "daily_chat_credit": daily_chat_credit,
         "requests_stats": requests_stats,
         "models": userSettings.get("models", []),
