@@ -195,7 +195,7 @@ async def create_brain_chat_input_handler(
             current_user.openai_api_key = brain_details.openai_api_key
 
     if not current_user.openai_api_key:
-        user_identity = get_user_identity(current_user.id)
+        user_identity = get_user_identity(current_user.id, current_user.email)
 
         if user_identity is not None:
             current_user.openai_api_key = user_identity.openai_api_key
@@ -269,7 +269,7 @@ async def create_meta_brain_chat_input_handler(
             current_user.openai_api_key = meta_brain_details.openai_api_key
 
     if not current_user.openai_api_key:
-        user_identity = get_user_identity(current_user.id)
+        user_identity = get_user_identity(current_user.id, current_user.email)
 
         if user_identity is not None:
             current_user.openai_api_key = user_identity.openai_api_key
@@ -339,7 +339,7 @@ async def create_stream_question_handler(
             current_user.openai_api_key = brain_details.openai_api_key
 
     if not current_user.openai_api_key:
-        user_identity = get_user_identity(current_user.id)
+        user_identity = get_user_identity(current_user.id, current_user.email)
 
         if user_identity is not None:
             current_user.openai_api_key = user_identity.openai_api_key
