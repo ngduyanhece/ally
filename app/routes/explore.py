@@ -31,10 +31,10 @@ async def explore_brain_documents_endpoint(
 @router.get("/explore/brains/", dependencies=[Depends(AuthBearer())])
 async def explore_meta_brain_brains_endpoint(
     current_user: UserIdentity = Depends(get_current_user),
-    meta_brain_id: UUID = Query(..., description="The ID of the brain"),
+    meta_brain_id: UUID = Query(..., description="The ID of the meta brain"),
 ):
     """
-    Retrieve and explore unique user data vectors.
+    Retrieve all the brains associated with a meta brain.
     """
     brains = get_meta_brain_brains(meta_brain_id, current_user.id)
     brains.sort(key=lambda x: x.name)

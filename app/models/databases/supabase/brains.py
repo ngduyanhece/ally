@@ -30,6 +30,11 @@ class CreateBrainProperties(BaseModel):
 			brain_dict["prompt_id"] = str(brain_dict.get("prompt_id"))
 		return brain_dict
 
+class CreatedBrainOutput(BaseModel):
+	brain_id: UUID
+	name: str
+	rights: str
+
 class BrainUpdatableProperties(BaseModel):
 	name: Optional[str]
 	description: Optional[str]

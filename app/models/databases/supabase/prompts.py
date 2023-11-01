@@ -35,14 +35,24 @@ class Prompts(Repository):
     def __init__(self, supabase_client):
         self.db = supabase_client
 
-    def create_prompt(self, prompt: CreatePromptProperties) -> Prompt:
+    def create_prompt(self, prompt: CreatePromptProperties, user_id) -> Prompt:
         """
         Create a prompt
         """
+        response = (
+            self.db.from_("prompts")
+            .insert(
+                {
+                    "title": prompt.title,
+                    "content": prompt.content,
+                    "status": prompt.status,
+                    "user_id": str(user_id),
+                }
+            )
+            .execute()
+        )
 
-        response = (self.db.from_("prompts").insert(prompt.model_dump()).execute()).data
-
-        return Prompt(**response[0])
+        return Prompt(**response.data[0])
 
     def delete_prompt_by_id(self, prompt_id: UUID) -> DeletePromptResponse:
         """
@@ -113,3 +123,15 @@ class Prompts(Repository):
             raise HTTPException(404, "Prompt not found")
 
         return Prompt(**response[0])
+    
+    def get_user_prompts(self, user_id: UUID) -> list[Prompt]:
+        """
+        List all prompts for a user
+        """
+
+        return (
+            self.db.from_("prompts")
+            .select("*")
+            .filter("user_id", "eq", str(user_id))
+            .execute()
+        ).data

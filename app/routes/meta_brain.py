@@ -1,12 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.logger import get_logger
 from app.models.databases.supabase.meta_brains import (
-    CreateMetaBrainProperties, MetaBrainUpdatableProperties)
-from app.models.meta_brain_entity import PublicMetaBrain
+    CreatedMetaBrainOutput, CreateMetaBrainProperties,
+    MetaBrainUpdatableProperties)
+from app.models.meta_brain_entity import (MetaBrainEntity,
+                                          MinimalMetaBrainEntity,
+                                          PublicMetaBrain)
 from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
 from app.repository.brain.set_as_default_brain_for_user import \
@@ -34,25 +37,28 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 # get all meta brains
-@router.get("/meta_brains/", dependencies=[Depends(AuthBearer())])
-async def brain_endpoint(
+@router.get("/meta_brains/",
+            status_code=status.HTTP_200_OK,
+            dependencies=[Depends(AuthBearer())])
+async def get_all_meta_brains_endpoint(
     current_user: UserIdentity = Depends(get_current_user),
-):
+) -> list[MinimalMetaBrainEntity]:
     """
     Retrieve all meta brains for the current user.
 
     - `current_user`: The current authenticated user.
     - Returns a list of all meta brains registered for the user.
 
-    This endpoint retrieves all the meta brains associated with the current authenticated user. It returns a list of brains objects
-    containing the brain ID and brain name for each meta brain.
+    This endpoint retrieves all the meta brains associated with the current authenticated user
     """
     meta_brains = get_user_meta_brains(current_user.id)
-    return {"meta_brains": meta_brains}
+    return meta_brains
 
 @router.get(
-    "/meta_brains/public", dependencies=[Depends(AuthBearer())])
-async def public_meta_brains_endpoint() -> list[PublicMetaBrain]:
+    "/meta_brains/public",
+    status_code=status.HTTP_200_OK, 
+    dependencies=[Depends(AuthBearer())])
+async def get_all_public_meta_brains_endpoint() -> list[PublicMetaBrain]:
     """
     Retrieve all ally public meta brains
     """
@@ -60,10 +66,12 @@ async def public_meta_brains_endpoint() -> list[PublicMetaBrain]:
 
 # get default meta brain
 @router.get(
-    "/meta_brains/default/", dependencies=[Depends(AuthBearer())])
+    "/meta_brains/default/",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(AuthBearer())])
 async def get_default_meta_brain_endpoint(
     current_user: UserIdentity = Depends(get_current_user),
-):
+) -> MetaBrainEntity:
     """
     Retrieve the default meta brain for the current user. If the user doesnt have one, it creates one.
 
@@ -75,23 +83,24 @@ async def get_default_meta_brain_endpoint(
     """
 
     meta_brain = get_default_user_brain_or_create_new(current_user)
-    return {"id": meta_brain.meta_brain_id, "name": meta_brain.name, "rights": "Owner"}
+    return meta_brain
 
 @router.get(
     "/meta_brains/{meta_brain_id}/",
+    status_code=status.HTTP_200_OK,
     dependencies=[Depends(AuthBearer()), Depends(has_meta_brain_authorization())]
 )
 async def get_meta_brain_endpoint(
     meta_brain_id: UUID,
-):
+) -> MetaBrainEntity | None:
     """
     Retrieve details of a specific meta brain by meta brain ID.
 
     - `meta_brain_id`: The ID of the meta brain to retrieve details for.
     - Returns the meta brain ID and its history.
+    - Raises a 404 error if the meta brain is not found.
 
-    This endpoint retrieves the details of a specific meta brain identified by the provided meta brain ID. It returns the meta brain ID and its
-    history, which includes the meta brain messages exchanged in the meta brain.
+    This endpoint retrieves the details of a specific meta brain identified by the provided meta brain ID
     """
 
     meta_brain_details = get_meta_brain_details(meta_brain_id)
@@ -104,11 +113,13 @@ async def get_meta_brain_endpoint(
     return meta_brain_details
 
 # create new meta brain
-@router.post("/meta_brains/", dependencies=[Depends(AuthBearer())])
+@router.post("/meta_brains/",
+             status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(AuthBearer())])
 async def create_meta_brain_endpoint(
     meta_brain: CreateMetaBrainProperties,
     current_user: UserIdentity = Depends(get_current_user),
-):
+) -> CreatedMetaBrainOutput:
     """
     Create a new meta brain with given
         name
@@ -157,7 +168,7 @@ async def create_meta_brain_endpoint(
         )
 
     return {
-        "id": new_meta_brain.meta_brain_id,
+        "meta_brain_id": new_meta_brain.meta_brain_id,
         "name": new_meta_brain.name,
         "rights": "Owner",
     }
@@ -165,6 +176,7 @@ async def create_meta_brain_endpoint(
 # update existing meta brain
 @router.put(
     "/meta_brains/{meta_brain_id}/",
+    status_code=status.HTTP_200_OK,
     dependencies=[
         Depends(
             AuthBearer(),
@@ -175,7 +187,7 @@ async def create_meta_brain_endpoint(
 async def update_meta_brain_endpoint(
     meta_brain_id: UUID,
     meta_brain_to_update: MetaBrainUpdatableProperties,
-):
+) -> MetaBrainEntity | None:
     """
     Update an existing brain with new brain configuration
     """
@@ -190,13 +202,14 @@ async def update_meta_brain_endpoint(
     if meta_brain_to_update.status == "private" and existing_meta_brain.status == "public":
         delete_meta_brain_user(meta_brain_id)
 
-    update_meta_brain_by_id(meta_brain_id, meta_brain_to_update)
+    update_meta_brain = update_meta_brain_by_id(meta_brain_id, meta_brain_to_update)
 
-    return {"message": f"Meta Brain {meta_brain_id} has been updated."}
+    return update_meta_brain
 
 # set as default meta brain
 @router.post(
     "/meta_brains/{meta_brain_id}/default",
+    status_code=status.HTTP_200_OK,
     dependencies=[
         Depends(
             AuthBearer(),
