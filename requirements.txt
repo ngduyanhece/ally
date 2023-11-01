@@ -15,4 +15,3 @@ tiktoken==0.5.1
 flower
 resend==0.5.2
 tqdm==4.66.1
-modal==0.55.3994
