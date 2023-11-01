@@ -24,6 +24,11 @@ class CreateMetaBrainProperties(BaseModel):
         meta_brain_dict = super().model_dump(*args, **kwargs)
         return meta_brain_dict
 
+class CreatedMetaBrainOutput(BaseModel):
+    meta_brain_id: UUID
+    name: str
+    rights: str
+
 
 class MetaBrainUpdatableProperties(BaseModel):
     name: Optional[str]
