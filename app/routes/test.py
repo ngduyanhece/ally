@@ -5,8 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.bench.llm_bench import LLMBench
+from app.bench.user_simulator_bench import UserSimulatorBench
+from app.llm.llm_brain import LLMBrain
+from app.llm.llm_user_simulator import LLMUserSimulator
+from app.logger import get_logger
 from app.models.brain_testsuite import (BrainTestCaseEntity,
                                         BrainTestSuiteEntity)
+from app.models.chats import ChatInput
 from app.models.databases.supabase.brains import (
     CreateBrainTestcaseProperties, CreateBrainTestsuiteProperties,
     UpdateBrainTestcaseProperties, UpdateBrainTestsuiteProperties)
@@ -21,6 +26,7 @@ from app.repository.brain.delete_brain_testcase_by_testsuite_id import \
     delete_brain_testcase_by_test_suite_id
 from app.repository.brain.delete_brain_testsuite_by_id import \
     delete_brain_testsuite_by_id
+from app.repository.brain.get_brain_details import get_brain_details
 from app.repository.brain.get_brain_testcase_by_testsuite_id import \
     get_brain_testcase_by_testsuite_id
 from app.repository.brain.get_brain_testsuite_by_id import \
@@ -29,6 +35,8 @@ from app.repository.brain.update_brain_testcase_by_testsuite_id import \
     update_brain_testcase_by_test_suite_id
 from app.repository.brain.update_brain_testsuite_by_id import \
     update_brain_testsuite_by_id
+from app.repository.task_goal.get_goal_by_brain_id_and_goal_id import \
+    get_task_goal_by_brain_id_goal_id
 from app.repository.testcase_data.add_testcase_data_to_brain_testcase import \
     add_testcase_data_to_brain_testcase
 from app.repository.testcase_data.create_testcase_data_from_message import \
@@ -37,6 +45,9 @@ from app.repository.testcase_data.delete_testcase_data_by_id import \
     delete_testcase_data_by_id
 from app.repository.testcase_data.remove_testcase_data_to_brain_testcase import \
     remove_testcase_data_to_brain_testcase
+from app.repository.user_identity.get_user_identity import get_user_identity
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -229,3 +240,78 @@ async def run_testcase_for_a_brain(
 	)
 	return response
 
+@router.post(
+	"/test/user_simulator",
+	status_code=status.HTTP_201_CREATED,
+	dependencies=[Depends(AuthBearer())],
+)
+async def run_test_for_a_brain_with_user_simulator(
+	brain_id: UUID = Query(..., description="The ID of the brain"),
+	user_simulator_id: UUID = Query(..., description="The ID of the user simulator"),
+	current_user: UserIdentity = Depends(get_current_user),
+):
+	if not current_user.openai_api_key:
+		user_identity = get_user_identity(current_user.id, current_user.email)
+		if user_identity is not None:
+			current_user.openai_api_key = user_identity.openai_api_key
+	brain = get_brain_details(brain_id)
+	llm_brain = LLMBrain(
+		chat_id="",
+		model=brain.model,
+		max_tokens=brain.max_tokens,
+		temperature=brain.temperature,
+		brain_id=str(brain_id),
+		user_openai_api_key=str(current_user.openai_api_key) if current_user.openai_api_key else str(brain.openai_api_key),
+		prompt_id=str(brain.prompt_id)
+	)
+
+	llm_user_simulator = LLMUserSimulator(
+		brain_id=str(user_simulator_id),
+		user_openai_api_key=str(current_user.openai_api_key)
+	)
+
+	# user simulator share the same knowledge of brain
+	llm_user_simulator.vector_store = llm_brain.vector_store
+
+	logger.info(f"current_user {current_user}")
+
+	user_simulator_bench = UserSimulatorBench(
+		llm_brain=llm_brain,
+		llm_user_simulator=llm_user_simulator,
+		user_id=current_user.id,
+		max_turns=5
+	)
+	user_simulator_bench.simulate()
+
+
+@router.post(
+	"/test/add_question_to_user_simulator/{user_simulator_id}",
+	status_code=status.HTTP_201_CREATED,
+	dependencies=[Depends(AuthBearer())],
+)
+async def add_question_to_user_simulator(
+	user_simulator_id: UUID,
+	chat_input: ChatInput,
+	chat_id: UUID = Query(..., description="The ID of the chat"),
+	goal_id: UUID = Query(..., description="The ID of the user simulator goal"),
+	brain_id: UUID = Query(..., description="The ID of the brain"),
+	current_user: UserIdentity = Depends(get_current_user),
+):
+	if not current_user.openai_api_key:
+		user_identity = get_user_identity(current_user.id, current_user.email)
+		if user_identity is not None:
+			current_user.openai_api_key = user_identity.openai_api_key
+	
+	brain = get_brain_details(user_simulator_id)
+	goal = get_task_goal_by_brain_id_goal_id(brain_id, goal_id)
+
+	llm_user_simulator = LLMUserSimulator(
+		brain=brain,
+		user_openai_api_key=str(current_user.openai_api_key),
+		goal=goal
+	)
+	chat_answer = llm_user_simulator.generate_answer(chat_id, chat_input)
+	return chat_answer
+
+
+	

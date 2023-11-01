@@ -9,3 +9,7 @@ async def upload_healthz():
 @router.get("/chat/healthz")
 async def chat_healthz():
     return {"status": "ok"}
+
+@router.get("/test/healthz")
+async def test_healthz():
+    return {"status": "ok"}
