@@ -21,6 +21,8 @@ from app.logger import get_logger
 from app.models.chats import ChatInput
 from app.models.databases.supabase.chats import CreateChatHistory
 from app.repository.brain.get_brain_by_id import get_brain_by_id
+from app.repository.brain.get_question_context_from_brain import \
+    get_question_context_from_brain
 from app.repository.chat.format_chat_history import format_chat_history
 from app.repository.chat.get_chat_history import (GetChatHistoryOutput,
                                                   get_chat_history)
@@ -157,23 +159,26 @@ class LLMBrain(LLMBase):
                 }
             )
         answer = model_response["answer"]
-        new_chat = update_chat_history(
-            CreateChatHistory(
-                **{
-                    "chat_id": chat_id,
-                    "user_message": chat_input.chat_input,
-                    "assistant": answer,
-                    "brain_id": self.brain_id if self.brain_id else chat_input.brain_id,
-                    "prompt_id": self.prompt_to_use_id,
-                }
-            )
-        )
 
         if chat_input.brain_id:
             brain = get_brain_by_id(chat_input.brain_id)
         else:
             brain = get_brain_by_id(self.brain_id)
 
+        new_chat = update_chat_history(
+            CreateChatHistory(
+                **{
+                    "chat_id": chat_id,
+                    "user_message": chat_input.chat_input,
+                    "assistant": answer,
+                    "brain_id": self.brain_id if self.brain_id
+                    else chat_input.brain_id,
+                    "prompt_id": self.prompt_to_use_id,
+                    "context": get_question_context_from_brain(
+                        brain.brain_id, chat_input.chat_input),
+                }
+            )
+        )
         return GetChatHistoryOutput(
             **{
                 "chat_id": chat_id,
@@ -261,6 +266,8 @@ class LLMBrain(LLMBase):
                     "assistant": "",
                     "brain_id": self.brain_id if self.brain_id else chat_input.brain_id,
                     "prompt_id": self.prompt_to_use_id,
+                    "context": get_question_context_from_brain(
+                        brain, chat_input.chat_input),
                 }
             )
         )
@@ -338,6 +345,8 @@ class LLMBrain(LLMBase):
                     "assistant": answer,
                     "brain_id": self.brain_id,
                     "prompt_id": self.prompt_to_use_id,
+                    "context": get_question_context_from_brain(
+                        self.brain_id, chat_input),
                 }
             )
         )

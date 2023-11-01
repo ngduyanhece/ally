@@ -53,6 +53,5 @@ async def delete_label_for_message_handler(
 ):
     try:
         _ = delete_message_label_by_id(message_id, current_user.id)
-        return HTTPException(status_code=200, detail="Label deleted")
     except Exception as e:
         return HTTPException(status_code=404, detail=str(e))

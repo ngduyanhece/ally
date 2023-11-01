@@ -13,6 +13,15 @@ class CreateChatHistory(BaseModel):
     assistant: str
     prompt_id: Optional[UUID]
     brain_id: Optional[UUID]
+    context: Optional[str]
+
+class CreateUserSimulatorChatHistory(BaseModel):
+    chat_id: UUID
+    user_message: str
+    assistant: str
+    task_goal: str
+    brain_id: Optional[UUID]
+    context: Optional[str]
 
 class Chats(Repository):
     def __init__(self, supabase_client):
@@ -66,11 +75,29 @@ class Chats(Repository):
                     "brain_id": str(chat_history.brain_id)
                     if chat_history.brain_id
                     else None,
+                    "context": chat_history.context,
                 }
             )
             .execute()
         )
 
+        return response
+    
+    def update_user_simulator_chat_history(self, chat_history: CreateUserSimulatorChatHistory):
+        response = (
+            self.db.table("user_simulator_chat_history")
+            .insert(
+                {
+                    "chat_id": str(chat_history.chat_id),
+                    "user_message": chat_history.user_message,
+                    "assistant": chat_history.assistant,
+                    "task_goal": chat_history.task_goal,
+                    "brain_id": str(chat_history.brain_id),
+                    "context": chat_history.context,
+                }
+            )
+            .execute()
+        )
         return response
 
     def update_chat(self, chat_id, updates):
