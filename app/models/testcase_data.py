@@ -16,4 +16,4 @@ class TestCaseDataEntity(BaseModel):
 
 class TestRun(BaseModel):
     run_name: str
-    batch_size: int
+    batch_size: int 

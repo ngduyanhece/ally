@@ -9,4 +9,5 @@ def get_message_label_by_id(
     message_id: str
 ) -> MessageLabelOutput | None:
     supabase_db = get_supabase_db()
-    return supabase_db.get_message_label_by_id(message_id)
+    response = supabase_db.get_message_label_by_id(message_id)
+    return response

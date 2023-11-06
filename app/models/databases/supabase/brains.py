@@ -429,7 +429,7 @@ class Brain(Repository):
 		)
 		if len(response.data) == 0:
 			return None
-		return BrainTestSuiteEntity(**response.data)
+		return BrainTestSuiteEntity(**response.data[0])
 	
 	def get_brain_testsuite_by_id(self, brain_id: UUID) -> BrainTestSuiteEntity | None:
 		response = (

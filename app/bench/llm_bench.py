@@ -15,8 +15,8 @@ from app.repository.brain.get_brain_testsuite_id_by_brain_id import \
     get_brain_testsuite_id_by_brain_id
 from app.repository.brain.get_scoring_method_from_brain_testsuite import \
     get_scoring_method_from_brain_testsuite
-from app.repository.testcase_data.get_all_testcases_from_brain_testcase import \
-    get_all_testcases_from_brain_testcase
+from app.repository.testcase_data.get_all_testcase_data_from_brain_testcase import \
+    get_all_testcase_data_from_brain_testcase
 
 logger = get_logger(__name__)
 
@@ -41,10 +41,10 @@ class LLMBench(BaseModel):
             })
         return scorer
 
-    def _load_testcases(self):
-        testcases = get_all_testcases_from_brain_testcase(
+    def _load_testcase_data(self):
+        testcase_data = get_all_testcase_data_from_brain_testcase(
             self.brain_testcase_id)
-        return testcases
+        return testcase_data
 
     def run(
         self,
@@ -63,14 +63,14 @@ class LLMBench(BaseModel):
                 self.current_user.openai_api_key else self.brain.openai_api_key,
                 prompt_id=str(self.brain.prompt_id)
         )
-        testcases = self._load_testcases()
+        testcase_data = self._load_testcase_data()
         candidate_output_list: Optional[List[str]] = []
         ref_outputs: Optional[List[str]] = []
         context_list: Optional[List[str]] = []
         input_texts: Optional[List[str]] = []
-        for testcase in testcases:
+        for data_point in testcase_data:
             chat_input = ChatInput(
-                chat_input=testcase.input,
+                chat_input=data_point.input,
                 use_history=True,
                 model=None,
                 temperature=None,
@@ -80,9 +80,9 @@ class LLMBench(BaseModel):
             )
             chat_answer = llm_brain.generate_answer(self.chat_id, chat_input)
             candidate_output_list.append(chat_answer.assistant)
-            ref_outputs.append(testcase.reference_output)
-            context_list.append(testcase.context)
-            input_texts.append(testcase.input)
+            ref_outputs.append(data_point.reference_output)
+            context_list.append(data_point.context)
+            input_texts.append(data_point.input)
         try:
             all_scores = scorer.run(
                 candidate_output_list,

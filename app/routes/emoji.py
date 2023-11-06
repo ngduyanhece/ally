@@ -1,5 +1,3 @@
-
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -22,4 +20,3 @@ async def post_emoji_handler(
     Toggle, add or remove message emoji.
     """
     return handle_message_emoji(message_id, emoji.op, emoji.emoji, current_user.id)
-   

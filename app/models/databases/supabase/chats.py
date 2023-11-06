@@ -3,10 +3,11 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.logger import get_logger
 from app.models.chats import MessageLabel, MessageLabelOutput
 from app.models.databases.repository import Repository
 
-
+logger = get_logger(__name__)
 class CreateChatHistory(BaseModel):
     chat_id: UUID
     user_message: str
@@ -41,7 +42,7 @@ class Chats(Repository):
         return response
 
     def get_chat_history(self, chat_id: str):
-        reponse = (
+        response = (
             self.db.from_("chat_history")
             .select("*")
             .filter("chat_id", "eq", chat_id)
@@ -49,7 +50,7 @@ class Chats(Repository):
             .execute()
         )
 
-        return reponse
+        return response
 
     def get_user_chats(self, user_id: str):
         response = (
@@ -188,7 +189,7 @@ class Chats(Repository):
             .execute()
         )
 
-        return response
+        return response.data[0]
     
     def get_message_label_by_id(self, message_id: UUID) -> MessageLabelOutput | None:
         response = (
@@ -197,9 +198,7 @@ class Chats(Repository):
             .filter("message_id", "eq", message_id)
             .execute()
         ).data
-
-        if response == []:
+        if len(response) == 0:
             return None
-
         return MessageLabelOutput(**response[0])
     
