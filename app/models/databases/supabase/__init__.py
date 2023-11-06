@@ -6,6 +6,7 @@ from app.models.databases.supabase.files import File
 from app.models.databases.supabase.knowledge import Knowledges
 from app.models.databases.supabase.meta_brains import MetaBrain
 from app.models.databases.supabase.notifications import Notifications
+from app.models.databases.supabase.onboarding import Onboarding
 from app.models.databases.supabase.prompts import Prompts
 from app.models.databases.supabase.task_goal import TaskGoal
 from app.models.databases.supabase.testcase_data import TestCaseData
@@ -25,5 +26,6 @@ __all__ = [
     "File",
     "Emoji",
     "TestCaseData",
-    "TaskGoal"
+    "TaskGoal",
+    "Onboarding",
 ]

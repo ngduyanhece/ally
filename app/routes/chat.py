@@ -155,7 +155,7 @@ async def create_chat_handler(
 
 # add new input to brain to chat
 @router.post(
-    "/brain/chat/{chat_id}/question",
+    "/chat/brain/{chat_id}/question",
     dependencies=[
         Depends(
             AuthBearer(),
@@ -178,7 +178,7 @@ async def create_brain_chat_input_handler(
             user_id=current_user.id,
             required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
         )
-     # Retrieve user's OpenAI API key
+    # Retrieve user's OpenAI API key
     current_user.openai_api_key = request.headers.get("Openai-Api-Key")
     brain = Brain(id=brain_id)
     brain_details: BrainEntity | None = None
@@ -213,7 +213,7 @@ async def create_brain_chat_input_handler(
         chat_input.max_tokens = chat_input.max_tokens or brain.max_tokens or 256
     
     try:
-        #TODO: improve the user request limit 
+        # TODO: improve the user request limit 
         # check_user_requests_limit(current_user)
         is_model_ok = (brain_details or chat_input).model in userSettings.get("models", ["gpt-3.5-turbo"])  # type: ignore
         llm_brain = LLMBrain(
@@ -376,8 +376,6 @@ async def create_stream_question_handler(
 
     except HTTPException as e:
         raise e
-
-
 
 # get chat history
 @router.get(

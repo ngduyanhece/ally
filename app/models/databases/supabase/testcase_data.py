@@ -37,7 +37,7 @@ class TestCaseData(Repository):
 			filter("testcase_data_id", "eq", str(testcase_data_id)).execute()
 		return response
 
-	def get_all_testcases_from_brain_testcase(
+	def get_all_testcase_data_from_brain_testcase(
 			self, brain_testcase_id: UUID) -> List[TestCaseDataEntity]:
 		response = (
 			self.db.from_("brain_testcase_testcase_data")

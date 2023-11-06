@@ -99,7 +99,7 @@ async def delete_brain_testsuite_handler(
 		brain_id
 	)
 	if delete_brain_testsuite is None:
-		raise HTTPException(status_code=404, detail="cannot delete brain testsuite maybe brain not found")
+		raise HTTPException(status_code=404, detail="cannot delete brain testsuite maybe brain testsuite not found")
 	return delete_brain_testsuite
 
 
@@ -159,7 +159,7 @@ async def delete_brain_testcase_handler(
 )
 async def create_testcase_data_from_message_handler(
 	description: TestCaseDataDescription,
-	message_id: UUID = Query(..., description="The ID of the brain"),
+	message_id: UUID = Query(..., description="The ID of the message"),
 ) -> TestCaseDataEntity:
 	new_testcase_data = create_testcase_data_from_message(
 		message_id, description.description)
@@ -170,7 +170,7 @@ async def create_testcase_data_from_message_handler(
 	status_code=status.HTTP_200_OK, 
 	dependencies=[Depends(AuthBearer())])
 async def delete_testcase_handler(
-	testcase_data_id: UUID = Query(..., description="The ID of the message"),
+	testcase_data_id: UUID = Query(..., description="The ID of the testcase data"),
 ) -> TestCaseDataEntity:
 	delete_testcase_data = delete_testcase_data_by_id(
 		testcase_data_id
@@ -188,13 +188,13 @@ async def add_testcase_data_to_brain_testcase_handler(
 	testcase_data_id: UUID = Query(..., description="The ID of the testcase data"),
 	brain_testcase_id: UUID = Query(..., description="The ID of the brain testcase"),
 ):
-	new_testcase_data = add_testcase_data_to_brain_testcase(
-		brain_testcase_id=brain_testcase_id, 
-		testcase_data_id=testcase_data_id
-	)
-	if len(new_testcase_data.data[0]) > 0:
-		return new_testcase_data.data[0]
-	else:
+	try:
+		new_testcase_data = add_testcase_data_to_brain_testcase(
+			brain_testcase_id=brain_testcase_id, 
+			testcase_data_id=testcase_data_id
+		)
+		return new_testcase_data.data
+	except Exception as e:
 		raise HTTPException(status_code=404, detail="cannot add testcase data to brain testcase")
 	
 @router.delete(
@@ -210,8 +210,8 @@ async def remove_testcase_data_to_brain_testcase_handler(
 		brain_testcase_id=brain_testcase_id,
 		testcase_data_id=testcase_data_id
 	)
-	if len(remove_testcase_data.data[0]) > 0:
-		return remove_testcase_data.data[0]
+	if len(remove_testcase_data.data) > 0:
+		return remove_testcase_data.data
 	else:
 		raise HTTPException(status_code=404, detail="cannot remove testcase data to brain testcase")
 
@@ -228,6 +228,11 @@ async def run_testcase_for_a_brain(
 	current_user: UserIdentity = Depends(get_current_user),
 	brain_testcase_id: UUID = Query(..., description="The ID of the brain testcase")
 ):
+	if not current_user.openai_api_key:
+		user_identity = get_user_identity(current_user.id, current_user.email)
+
+		if user_identity is not None:
+			current_user.openai_api_key = user_identity.openai_api_key
 	bench = LLMBench(
 		brain_id=str(brain_id),
 		chat_id=str(chat_id),
@@ -238,7 +243,7 @@ async def run_testcase_for_a_brain(
 		run_name=test_run.run_name,
 		batch_size=test_run.batch_size,
 	)
-	return response
+	return response.data[0]
 
 @router.post(
 	"/test/user_simulator",

@@ -13,8 +13,11 @@ def add_testcase_data_to_brain_testcase(
     Add testcase data to brain testcase
     """
     supabase_db = get_supabase_db()
-    response = supabase_db.add_testcase_data_to_brain_testcase(
-        brain_testcase_id=brain_testcase_id,
-        testcase_data_id=testcase_data_id,
-    )
-    return response
+    try:
+        response = supabase_db.add_testcase_data_to_brain_testcase(
+            brain_testcase_id=brain_testcase_id,
+            testcase_data_id=testcase_data_id,
+        )
+        return response
+    except Exception as e:
+        raise Exception(e)
