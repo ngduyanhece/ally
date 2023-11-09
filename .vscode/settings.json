@@ -73,4 +73,6 @@
     "togggle",
     "vectorstore"
   ],
+  "python.analysis.extraPaths": [
+  ],
 }

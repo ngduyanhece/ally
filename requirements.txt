@@ -17,3 +17,4 @@ resend==0.5.2
 tqdm==4.66.1
 pyright==1.1.333
 pytest==7.4.3
+modal==0.55.3994
