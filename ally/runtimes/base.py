@@ -14,6 +14,8 @@ from pydantic import BaseModel, model_validator
 from tqdm import tqdm
 
 from ally.utils.internal_data import InternalDataFrame
+from ally.utils.logs import print_text
+from ally.utils.retry_parser import RetryWithErrorOutputParser
 
 tqdm.pandas()
 
@@ -27,7 +29,6 @@ class Runtime(BaseModel, ABC):
 		Defaults to False.
 	"""
 	verbose: bool = False
-	logger: Optional[Any] = None
 
 	@model_validator(mode='after')
 	def init_runtime(self) -> 'Runtime':
@@ -120,14 +121,20 @@ class LLMRuntime(Runtime):
 		verified_input = record
 		# exclude guidance parameter from input
 		if self.verbose:
-			self.logger.info(str(verified_input))
+			print_text(str(verified_input))
 		result = chain.run(
 				verified_input
 		)
 		if not output_parser:
 				verified_output = {'': str(result)}
 		else:
-			verified_output = output_parser.parse(result)
+			try:
+				verified_output = output_parser.parse(result)
+			except Exception as e:
+				retry_parser = RetryWithErrorOutputParser.from_llm(
+					parser=output_parser, llm=self._llm, max_retries=2)
+				verified_output = retry_parser.parse_with_chat_prompt_template(
+					result, self._llm_prompt_template, verified_input)
 
 		return verified_output
 	
@@ -159,7 +166,7 @@ class LLMRuntime(Runtime):
 		parser = StructuredOutputParser.from_response_schemas(response_schemas)
 		format_instructions = parser.get_format_instructions()
 		return parser, format_instructions
-  			
+				
 	def get_instruction_prompt(
 			self, instruction_template) -> SystemMessagePromptTemplate:
 		"""Generates the instruction prompt for the system
@@ -193,7 +200,7 @@ class LLMRuntime(Runtime):
 		record: Dict[str, Any],
 		input_template: str,
 		output_template: Optional[str] = None,
-		instructions_template: Optional[str] = None,
+		instruction_template: Optional[str] = None,
 	) -> Dict[str, Any]:
 		"""Processes a record using the provided templates and instructions.
 
@@ -206,11 +213,11 @@ class LLMRuntime(Runtime):
 				Dict[str, Any]: The processed record.
 		"""
 		chain, output_parser = self._prepare_chain_and_params(
-			input_template, output_template, instructions_template)
+			input_template, output_template, instruction_template)
 		output = self._process_record(
-				record=record,
-				chain=chain,
-				output_parser=output_parser,
+			record=record,
+			chain=chain,
+			output_parser=output_parser,
 		)
 		return output
 	
@@ -219,7 +226,7 @@ class LLMRuntime(Runtime):
 		batch: InternalDataFrame,
 		input_template: str,
 		output_template: Optional[List[Dict]] = None,
-		instructions: Optional[str] = None,
+		instruction_template: Optional[str] = None,
 	) -> InternalDataFrame:
 		"""Processes a batch of records using the provided templates 
 		and instructions.
@@ -229,16 +236,15 @@ class LLMRuntime(Runtime):
 				input_template (str): Template for input processing.
 				output_template (str): Template for output processing.
 				instructions (str): Instructions for guidance.
-				extra_fields (Dict[str, Any], optional): Additional fields to include 
 				during batch processing.
 
 		Returns:
 				InternalDataFrame: The processed batch of records.
 		"""
-        
+				
 		chain, output_parser = self._prepare_chain_and_params(
-			input_template, output_template, instructions)
-		self.logger.info(chain.input_keys)
+			input_template, output_template, instruction_template)
+		print_text(chain.input_keys)
 		output = batch.progress_apply(
 				self._process_record,
 				axis=1,

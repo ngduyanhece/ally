@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import Dict, List
 
 from ally.skills.base import LLMSkill
 
@@ -10,13 +10,11 @@ class ClassificationSkill(LLMSkill):
 
 	Attributes:
 		name (str): Unique name of the skill.
-		instructions (str): Instructs agent what to do with the input data.
+		instruction_template (str): Instructs agent what to do with the input data.
 		description (str): Description of the skill.
 		input_template (str): Template for the input data.
-		output_template (str): Template for the output data.
-		input_data_field (str): Name of the input data field.
+		output_template: format of the output data
 		prediction_field (str): Name of the prediction field to be used for the output data.
-		labels (List[str]): A list of valid labels for the classification task.
 
 	Examples:
 		>>> import pandas as pd
@@ -26,7 +24,49 @@ class ClassificationSkill(LLMSkill):
 		I love this movie!      positive   0.99
 		I hate this movie!      negative   0.99
 	"""
-	instructions: str = 'Label the input text with the following labels: {{labels}}'
-	labels: List[str]
-	output_template: str = "Output: {{select 'predictions' options=labels logprobs='score'}}"
+	instruction_template: str = 'Label the input text with the following labels {labels}'
+	output_template: List[Dict[str, str]] = [
+		{
+			"name": "predictions",
+			"description": "predictions of the model"
+		},
+		{
+			"name": "score",
+			"description": "logprobs value of the prediction"
+		}
+	]
+	prediction_field: str = 'predictions'
+
+class ClassificationSkillWithCoT(ClassificationSkill):
+	"""
+	Skill specialized for classifying text inputs with the addition of generating a Chain of Thought.
+
+	Attributes:
+		name (str): Unique name of the skill.
+		instruction_template (str): Instructs agent what to do with the input data.
+		description (str): Description of the skill.
+		input_template (str): Template for the input data.
+		output_template: format of the output data
+		prediction_field (str): Name of the prediction field to be used for the output data.
+
+	Examples:
+		>>> import pandas as pd
+		>>> skill = ClassificationSkillWithCoT(labels=['positive', 'negative'])
+		>>> skill.apply(pd.DataFrame({'text': ['I love this movie!', 'I hate this movie!']}))
+		text                    predictions score  rationale
+		I love this movie!      positive   0.99    classified as positive because I love this movie!
+		I hate this movie!      negative   0.99    classified as negative because I hate this movie!
+	"""
+    
+	instruction_template: str = 'Label the input text with the following labels: {labels}. Provide a rationale for your answer.'
+	output_template: List[Dict[str, str]] = [
+		{
+			"name": "predictions",
+			"description": "predictions of the model"
+		},
+		{
+			"name": "rationale",
+			"description": "rationale for the prediction"
+		}
+	]
 	prediction_field: str = 'predictions'

@@ -22,7 +22,7 @@ def test_process_batch():
 	result = runtime.process_batch(
 		batch=df,
 		input_template="{text} {comments}",
-		output_templates=[
+		output_template=[
 			{
 				"name": "answer",
 				"description": "answer to the user's question"

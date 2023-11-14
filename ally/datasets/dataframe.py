@@ -2,7 +2,7 @@ from typing import Iterable
 
 from pydantic import Field
 
-from ally.datasets import Dataset
+from ally.datasets.base import Dataset
 from ally.utils.internal_data import InternalDataFrame
 
 

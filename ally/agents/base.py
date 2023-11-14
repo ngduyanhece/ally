@@ -9,10 +9,10 @@ from ally.environments.base import (BasicEnvironment, Environment,
                                     GroundTruthSignal)
 from ally.memories.base import Memory
 from ally.runtimes.base import Runtime
-from ally.runtimes.openai import OpenAIRuntime
 from ally.skills.base import BaseSkill
 from ally.skills.skillset import LinearSkillSet, SkillSet
 from ally.utils.internal_data import InternalDataFrame, InternalDataFrameConcat
+from ally.utils.logs import print_dataframe, print_text
 
 
 class Agent(BaseModel, ABC):
@@ -29,31 +29,14 @@ class Agent(BaseModel, ABC):
 	teacher_runtimes (Dict[str, Runtime], optional): The runtimes available to the agent's teacher. Defaults to predefined runtimes.
 	default_teacher_runtime (str): The default runtime used by the agent's teacher. Defaults to 'openai-gpt3'.
 	"""
-	logger: Optional[str] = None
-	environment: Union[InternalDataFrame, Dataset, Environment] = Field(default_factory=DataFrameDataset)
+	environment: Union[InternalDataFrame, Dataset, Environment]
 	skills: SkillSet
 
 	memory: Memory = Field(default=None)
-	runtimes: Optional[Dict[str, Runtime]] = Field(
-		default_factory=lambda: {
-			'openai': OpenAIRuntime(model='gpt-3.5-turbo-instruct'),
-			# 'llama2': LLMRuntime(
-			#     llm_runtime_type=LLMRuntimeModelType.Transformers,
-			#     llm_params={
-			#         'model': 'meta-llama/Llama-2-7b',
-			#         'device': 'cuda:0',
-			#     }
-			# )
-		}
-	)
-	teacher_runtimes: Optional[Dict[str, Runtime]] = Field(
-		default_factory=lambda: {
-			'openai-gpt3': OpenAIRuntime(model='gpt-3.5-turbo'),
-			# 'openai-gpt4': OpenAIRuntime(model='gpt-4')
-		}
-	)
+	runtimes: Optional[Dict[str, Runtime]]
+	teacher_runtimes: Optional[Dict[str, Runtime]]
 	default_runtime: str = 'openai'
-	default_teacher_runtime: str = 'openai-gpt3'
+	default_teacher_runtime: str = 'openai'
 
 	class Config:
 		arbitrary_types_allowed = True
@@ -213,7 +196,7 @@ class Agent(BaseModel, ABC):
 		ground_truth_signal = None
 
 		for iteration in range(learning_iterations):
-			self.logger.info(f'\n\n=> Iteration #{iteration}: Comparing to ground truth, analyzing and improving ...')
+			print_text(f'\n\n=> Iteration #{iteration}: Comparing to ground truth, analyzing and improving ...')
 			# Request feedback from environment is necessary
 			if request_environment_feedback:
 				if num_predictions_feedback is not None:
@@ -224,55 +207,55 @@ class Agent(BaseModel, ABC):
 				self.environment.request_feedback(self.skills, predictions_for_feedback)
 
 				# Compare predictions to ground truth -> get ground truth signal
-				ground_truth_signal = self.environment.compare_to_ground_truth(
-					self.skills,
-					predictions,
-					wait=wait_for_environment_feedback
-				)
+			ground_truth_signal = self.environment.compare_to_ground_truth(
+				self.skills,
+				predictions,
+				wait=wait_for_environment_feedback
+			)
 
-				self.logger.info(f'Comparing predictions to ground truth data ...')
-				self.logger.info(
-					InternalDataFrameConcat([predictions, ground_truth_signal.match], axis=1))
+			print_text(f'Comparing predictions to ground truth data ...')
+			print_dataframe(
+				InternalDataFrameConcat([predictions, ground_truth_signal.match], axis=1))
 
-				# Use ground truth signal to find the skill to improve
-				accuracy = ground_truth_signal.get_accuracy()
-				train_skill = self.skills.select_skill_to_improve(accuracy, accuracy_threshold)
-				if not train_skill:
-					self.logger.info(f'No skill to improve found. Stopping learning process.')
-					break
-				# select the worst performing skill
-				self.logger.info(f'Accuracy = {accuracy[train_skill.name] * 100:0.2f}%', style='bold red')
+			# Use ground truth signal to find the skill to improve
+			accuracy = ground_truth_signal.get_accuracy()
+			train_skill = self.skills.select_skill_to_improve(accuracy, accuracy_threshold)
+			if not train_skill:
+				print_text(f'No skill to improve found. Stopping learning process.')
+				break
+			# select the worst performing skill
+			print_text(f'Accuracy = {accuracy[train_skill.name] * 100:0.2f}%', style='bold red')
 
-				skill_errors = ground_truth_signal.get_errors(train_skill.name)
+			skill_errors = ground_truth_signal.get_errors(train_skill.name)
 
-				# 2. ANALYSIS PHASE: Analyze evaluation experience, optionally use long term memory
-				self.logger.info(f'Analyze evaluation experience ...')
-				error_analysis = train_skill.analyze(
-					predictions=predictions,
-					errors=skill_errors,
-					student_runtime=runtime,
-					teacher_runtime=teacher_runtime,
-					memory=self.memory
-				)
-				self.logger.info(f'Error analysis for skill "{train_skill.name}":\n')
-				self.logger.info(error_analysis, style='green')
-				if self.memory and update_memory:
-					self.memory.remember(error_analysis, self.skills)
+			# 2. ANALYSIS PHASE: Analyze evaluation experience, optionally use long term memory
+			print_text(f'Analyze evaluation experience ...')
+			error_analysis = train_skill.analyze(
+				predictions=predictions,
+				errors=skill_errors,
+				student_runtime=runtime,
+				teacher_runtime=teacher_runtime,
+				memory=self.memory
+			)
+			print_text(f'Error analysis for skill "{train_skill.name}":\n')
+			print_text(error_analysis, style='green')
+			if self.memory and update_memory:
+				self.memory.remember(error_analysis, self.skills)
 
-				# 3. IMPROVEMENT PHASE: Improve skills based on analysis
-				self.logger.info(f"Improve \"{train_skill.name}\" skill based on analysis ...")
-				train_skill.improve(
-					error_analysis=error_analysis,
-					runtime=teacher_runtime,
-				)
-				self.logger.info(f'Updated instructions for skill "{train_skill.name}":\n')
-				self.logger.info(train_skill.instructions, style='bold green')
+			# 3. IMPROVEMENT PHASE: Improve skills based on analysis
+			print_text(f"Improve \"{train_skill.name}\" skill based on analysis ...")
+			train_skill.improve(
+				error_analysis=error_analysis,
+				runtime=teacher_runtime,
+			)
+			print_text(f'Updated instructions for skill "{train_skill.name}":\n')
+			print_text(train_skill.instruction_template, style='bold green')
 
-				# 4. RE-APPLY PHASE: Re-apply skills to dataset
-				self.logger.info(f"Re-apply {train_skill.name} skill to dataset ...")
-				self.skills[train_skill.name] = train_skill
-				predictions = self.skills.apply(
-					predictions, runtime=runtime, improved_skill=train_skill.name)
+			# 4. RE-APPLY PHASE: Re-apply skills to dataset
+			print_text(f"Re-apply {train_skill.name} skill to dataset ...")
+			self.skills[train_skill.name] = train_skill
+			predictions = self.skills.apply(
+				predictions, runtime=runtime, improved_skill=train_skill.name)
 
-		self.logger.info('Train is done!')
+		print_text('Train is done!')
 		return ground_truth_signal

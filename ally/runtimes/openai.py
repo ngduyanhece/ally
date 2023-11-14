@@ -3,6 +3,8 @@ from typing import Optional
 
 import openai
 
+from ally.utils.logs import print_error
+
 from .base import LLMRuntime, LLMRuntimeModelType, LLMRuntimeType
 
 
@@ -24,13 +26,14 @@ class OpenAIRuntime(LLMRuntime):
 	api_key: Optional[str] = None
 	gpt_model_name: Optional[str] = "gpt-3.5-turbo-instruct"
 	temperature: Optional[float] = 0.0
+	max_tokens: Optional[int] = 256
 
 	def _check_api_key(self):
 		if self.api_key:
 			return
 		self.api_key = os.getenv('OPENAI_API_KEY')
 		if not self.api_key:
-			self.logger.error(
+			print_error(
 				'OpenAI API key is not provided. Please set the OPENAI_API_KEY environment variable:\n\n'
 				'export OPENAI_API_KEY=your-openai-api-key\n\n'
 				'or set the `api_key` attribute of the `OpenAIRuntime` python class:\n\n'
@@ -42,7 +45,7 @@ class OpenAIRuntime(LLMRuntime):
 		models = openai.Model.list(api_key=self.api_key)
 		models = set(model['id'] for model in models['data'])
 		if self.gpt_model_name not in models:
-			self.logger.error(
+			print_error(
 				f'Requested model "{self.gpt_model_name}" is not available in your OpenAI account. '
 				f'Available models are: {models}\n\n'
 				f'Try to change the runtime settings for {self.__class__.__name__}, for example:\n\n'
@@ -67,6 +70,7 @@ class OpenAIRuntime(LLMRuntime):
 		self.llm_params = {
 			'model_name': self.gpt_model_name,
 			'temperature': self.temperature,
-			'openai_api_key': self.api_key
+			'openai_api_key': self.api_key,
+			'max_tokens': self.max_tokens,
 		}
 		return self

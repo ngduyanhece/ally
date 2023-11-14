@@ -10,6 +10,7 @@ from ally.datasets.dataframe import DataFrameDataset
 from ally.skills.skillset import SkillSet
 from ally.utils.internal_data import (InternalDataFrame,
                                       InternalDataFrameConcat, InternalSeries)
+from ally.utils.logs import print_text
 from ally.utils.matching import fuzzy_match
 
 
@@ -55,10 +56,7 @@ class GroundTruthSignal(BaseModel):
 
 		Returns:
 			InternalSeries: A series representing the accuracy of predictions.
-
 		Examples:
-				
-
 		"""
 			
 		return self.match.mean()
@@ -120,12 +118,11 @@ class Environment(BaseModel, ABC):
 		Raises:
 			ValidationError: If the validation fails.
 		"""
-
 		if isinstance(v, InternalDataFrame):
 			return DataFrameDataset(df=v)
 		return v
 	
-	def sget_ground_truth_dataset(
+	def get_ground_truth_dataset(
 			self, wait: Optional[float] = None) -> InternalDataFrame:
 		"""
 		Get the ground truth dataset.
@@ -186,21 +183,25 @@ class Environment(BaseModel, ABC):
 			nonnull_index = gt.notnull() & pred.notnull()
 			gt = gt[nonnull_index]
 			pred = pred[nonnull_index]
+			print_text(gt)
+			print_text(pred)
 			# compare ground truth with predictions
 			if self.matching_function == 'exact':
-					gt_pred_match = gt == pred
+				print_text(" compare ground truth with predictions")
+				gt_pred_match = gt == pred
 			elif self.matching_function == 'fuzzy':
-					gt_pred_match = fuzzy_match(gt, pred, threshold=self.matching_threshold)
+				gt_pred_match = fuzzy_match(gt, pred, threshold=self.matching_threshold)
 			else:
-					raise NotImplementedError(f'Unknown matching function {self.matching_function}')
+				raise NotImplementedError(f'Unknown matching function {self.matching_function}')
 
 			# for values with True, we assume them equal to predictions
-			gt_pred_match[gt is True] = True
-			gt_pred_match[gt is False] = False
+			gt_pred_match[gt == True] = True
+			gt_pred_match[gt == False] = False
 
 			error_index = gt_pred_match[~gt_pred_match].index
 			# concatenate errors - dataframe with two columns: predictions and ground truth
-			errors[skill.name] = InternalDataFrameConcat([pred[error_index], gt[error_index]], axis=1)
+			errors[skill.name] = InternalDataFrameConcat(
+				[pred[error_index], gt[error_index]], axis=1)
 			errors[skill.name].columns = ["predictions", gt_column]
 			# concatenate matching columns
 			ground_truth_match = InternalDataFrameConcat([
@@ -309,3 +310,4 @@ class BasicEnvironment(Environment):
 		if self.ground_truth_dataset is not None:
 				return self.ground_truth_dataset
 		return super(BasicEnvironment, self).as_dataset()
+	

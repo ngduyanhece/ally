@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from ally.datasets import Dataset
+from ally.datasets.base import Dataset
 from ally.datasets.dataframe import DataFrameDataset
 from ally.memories.base import Memory
 from ally.runtimes.base import LLMRuntime, Runtime
@@ -96,7 +96,7 @@ class BaseSkill(BaseModel, ABC):
 			batch=input,
 			input_template=self.input_template,
 			output_template=self.output_template,
-			instructions=self.instruction_template,
+			instruction_template=self.instruction_template,
 		)
 		runtime_predictions.rename(
 			columns={self.prediction_field: self.name}, inplace=True)
@@ -105,21 +105,6 @@ class BaseSkill(BaseModel, ABC):
 			runtime_predictions[runtime_predictions.columns]
 		return output
 	
-	def _get_extra_fields(self):
-		"""
-		Retrieves fields that are not categorized as system fields.
-		
-		Returns:
-			dict: A dictionary containing fields that are not system fields.
-		"""
-				
-		# TODO: more robust way to exclude system fields
-		system_fields = {
-			'name', 'description', 'input_template', 'output_template', 
-			'instruction_template', 'prediction_field'}
-		extra_fields = self.model_dump(exclude=system_fields)
-		return extra_fields
-
 	@abstractmethod
 	def apply(
 			self, dataset: Dataset,
@@ -264,15 +249,20 @@ class LLMSkill(BaseSkill):
 		errors = errors.sample(n=min(MAX_ERRORS, errors.shape[0]))
 		# TODO: ground truth column name can be the input parameter that comes from GT signal
 		ground_truth_column_name = errors.columns[-1]
-		extra_fields = self._get_extra_fields()
 
 		# get error prepared inputs
 		inputs = student_runtime.process_batch(
 			batch=predictions.loc[errors.index],
 			input_template=self.input_template,
-			extra_fields=extra_fields
+			output_template=[
+				{
+					"name": "input",
+					"description": "the original user input"
+				}
+			],
+			instruction_template="get the original user input for error analysis",
 		)
-
+		
 		if not teacher_runtime:
 			teacher_runtime = student_runtime
 
@@ -286,44 +276,57 @@ class LLMSkill(BaseSkill):
 		# For example, using f-string format as generic, that translates to handlebars inside GuidanceRuntime
 		error_reasons = teacher_runtime.process_batch(
 				batch=predictions_and_errors,
-				instructions="{{#system~}}\n"
-											"LLM prompt was created by concatenating instructions with text input:\n\n"
-											"Prediction = LLM(Input, Instructions)\n\n"
-											"We expect the prediction to be equal to the ground truth.\n"
-											"Your task is to provide a reason for the error due to the original instruction.\n"
-											"Be concise and specific.\n\n"
-											f"Instructions: {self.instructions}\n"
-											"{{~/system}}",
-				input_template="{{#user~}}\n"
-												"{{input}}\n"
-												"Prediction: {{prediction}}\n"
-												"Ground truth: {{ground_truth}}\n"
-												"Error reason:\n"
-												"{{~/user}}",
-				output_template="{{#assistant~}}{{gen 'reason'}}{{~/assistant}}",
-				extra_fields=extra_fields
+				instruction_template=f"""
+					LLM prompt was created by concatenating instructions with text input:\n\n
+					Prediction = LLM(Input, Instructions)\n\n
+					We expect the prediction to be equal to the ground truth.\n
+					Your task is to provide a reason for the error due to the original instruction.\n
+					Be concise and specific.\n\n
+					instruction_template: {self.instruction_template}\n
+				""",
+				input_template="""
+					Input: {input}\n
+					Prediction: {prediction}\n"
+					Ground truth: {ground_truth}\n
+					Error reason:\n
+				""",
+				output_template=[{
+						"name": "reason",
+						"description": "Error reason"
+				}],
 		)
 		predictions_and_errors['reason'] = error_reasons['reason']
 		# build error report
-		result = teacher_runtime.process_record(
-				record={
-						'predictions_and_errors': predictions_and_errors.to_dict(orient='records'),
-				},
-				input_template="{{#each predictions_and_errors}}"
-												"\n{{this.input}}\n"
-												"Prediction: {{this.prediction}}\n"
-												"Ground truth: {{this.ground_truth}}\n"
-												'Error reason: {{this.reason}}\n'
-												"{{/each}}"
+		result = teacher_runtime.process_batch(
+				batch=predictions_and_errors,
+				output_template=[
+					{
+						"name": "result",
+						"description": "Error analysis report"
+					}
+				],
+				input_template="""
+					Input: {input}\n
+					Prediction: {prediction}\n"
+					Ground truth: {ground_truth}\n"
+					Error reason: {reason}\n
+					""",
+				instruction_template="""
+					build the Error analysis report base on the following:
+					1. Input
+					2. Prediction
+					3. Ground truth
+					4. Error reason
+				"""
 		)
 		# no specific output specified, all output is in the error report
-		error_report = result['']
+		error_report = ' '.join(result['result'])
 		return error_report
 	
 	def improve(
 		self,
 		error_analysis: str,
-		runtime: Runtime,
+		runtime: LLMRuntime,
 	):
 		"""
 		Refines the LLM skill based on its recent experiences and updates the skill's instructions.
@@ -337,24 +340,26 @@ class LLMSkill(BaseSkill):
 				record={
 						'error_analysis': error_analysis
 				},
-				instructions="{{#system~}}\n"
-											"LLM prompt was created by concatenating instructions with text input:\n\n"
-											"Prediction = LLM(Input, Instructions)\n\n"
-											"We expect the prediction to be equal to the ground truth.\n"
-											"Your task is to analyze errors made by old instructions "
-											"and craft new instructions for the LLM.\n"
-											"Follow best practices for LLM prompt engineering.\n"
-											"Include 2-3 examples at the end of your response to demonstrate how the new instruction would be applied.\n"
-											"Use the following format for your examples:\n"
-											"Input: ...\n"
-											"Output: ...\n\n"
-											"{{~/system}}\n",
-				input_template="{{#user~}}\n"
-												f"Old instructions: {self.instructions}\n\n"
-												"Errors:\n{{error_analysis}}\n"
-												"New instruction:\n"
-												"{{~/user}}",
-				output_template="{{#assistant~}}{{gen 'new_instruction'}}{{~/assistant}}",
-				extra_fields=self._get_extra_fields()
+				instruction_template="""
+					LLM prompt was created by concatenating instructions with text input:\n\n
+					Prediction = LLM(Input, Instructions)\n\n
+					We expect the prediction to be equal to the ground truth.\n
+					Your task is to analyze errors made by old instructions 
+					and craft new instructions for the LLM.\n
+					Follow best practices for LLM prompt engineering.\n
+					Include 2-3 examples at the end of your response to demonstrate how the new instruction would be applied.\n
+					Use the following format for your examples:\n
+					Input: ...\n
+					Output: ...\n\n
+				""",
+				input_template=f"""
+					Old instructions: {self.instruction_template}\n\n
+					Errors:\{error_analysis}\n"
+					New instruction:\n
+				""",
+				output_template=[{
+					"name": "new_instruction",
+					"description": "New instruction"
+				}],
 		)
-		self.instructions = result['new_instruction']
+		self.instruction_template = result['new_instruction']
