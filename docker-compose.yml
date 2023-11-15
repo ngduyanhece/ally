@@ -7,7 +7,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    container_name: backend-core
+    container_name: backend-core-v1
     restart: always
     volumes:
       - ./:/code/
