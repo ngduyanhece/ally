@@ -17,7 +17,6 @@ def test_process_batch():
 		verbose=True,
 		api_key=settings.openai_api_key,
 		gpt_model_name="gpt-3.5-turbo",
-		logger=logger
 	)
 	result = runtime.process_batch(
 		batch=df,

@@ -73,13 +73,15 @@
     "openai",
     "pbar",
     "pydantic",
+    "retcode",
     "runtimes",
     "skillset",
     "supabase",
     "testrun",
     "togggle",
     "tqdm",
-    "vectorstore"
+    "vectorstore",
+    "webserver"
   ],
   "python.analysis.extraPaths": [
   ],

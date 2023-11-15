@@ -130,6 +130,7 @@ async def create_brain_endpoint(
 	"""
 
 	user_brains = get_user_brains(current_user.id)
+	
 	userDailyUsage = UserUsage(
 		id=current_user.id,
 		email=current_user.email,
