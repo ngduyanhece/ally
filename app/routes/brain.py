@@ -130,6 +130,7 @@ async def create_brain_endpoint(
 	"""
 
 	user_brains = get_user_brains(current_user.id)
+	
 	userDailyUsage = UserUsage(
 		id=current_user.id,
 		email=current_user.email,
@@ -259,7 +260,7 @@ async def set_brain_meta_brain_relation(
 	return {"message": f"set the relation for meta brain {meta_brain_id} and brain {brain_id}"}
 
 @router.post(
-	"/brains/{brain_id}/question_context",
+	"/question_context/{brain_id}",
 	dependencies=[
 		Depends(
 			AuthBearer(),
@@ -276,6 +277,6 @@ async def get_question_context_from_brain_endpoint(
 	Get question context from brain
 	"""
 
-	context = get_question_context_from_brain(brain_id, request.question)
+	context = get_question_context_from_brain(brain_id, request.chat_input)
 
 	return {"context": context}

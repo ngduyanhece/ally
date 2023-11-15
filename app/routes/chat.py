@@ -94,7 +94,9 @@ def check_user_requests_limit(
 
 # get all chats
 @router.get("/chats", dependencies=[Depends(AuthBearer())])
-async def get_chats(current_user: UserIdentity = Depends(get_current_user)):
+async def get_chats(
+	current_user: UserIdentity = Depends(get_current_user)
+) -> List[Chat]:
 	"""
 	Retrieve all chats for the current user.
 
@@ -105,7 +107,7 @@ async def get_chats(current_user: UserIdentity = Depends(get_current_user)):
 	containing the chat ID and chat name for each chat.
 	"""
 	chats = get_user_chats(str(current_user.id))
-	return {"chats": chats}
+	return chats
 
 # delete one chat
 @router.delete(
