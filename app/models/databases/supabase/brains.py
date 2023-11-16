@@ -56,6 +56,7 @@ class BrainInputRequest(BaseModel):
 
 class ScoringMethod(str, enum.Enum):
 	qa_correctness = "qa_correctness"
+	fuzzy = "fuzzy"
 
 class CreateBrainTestsuiteProperties(BaseModel):
 	name: Optional[str] = "Default brain testsuite"
