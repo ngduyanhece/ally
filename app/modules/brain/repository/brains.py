@@ -66,7 +66,7 @@ class Brains(BrainsInterface):
 		response = (
 			self.db.from_("runtimes")
 			.select("*")
-			.filter("id", "eq", str(runtime_id))
+			.filter("id", "eq", runtime_id)
 			.execute()
 		).data
 		if len(response) == 0:
@@ -75,8 +75,16 @@ class Brains(BrainsInterface):
 	
 	def create_brain(self, brain: CreateFullBrainProperties) -> FullBrainEntity:
 		response = (
-			self.db.table("brains").insert(brain.model_dump())).execute()
-		return FullBrainEntity(**response.data[0])
+			self.db.table("brains").insert({
+				"name": brain.name,
+				"description": brain.description,
+				"status": brain.status,
+				"prompt_id": str(brain.prompt_id),
+				"runtime_id": brain.runtime_id if brain.runtime_id else None,
+				"teacher_runtime_id": brain.teacher_runtime_id if brain.teacher_runtime_id else None,
+			}).execute()
+		).data[0]
+		return FullBrainEntity(**response)
 	
 	def get_user_brains(self, user_id) -> list[FullBrainEntityWithRights]:
 		response = (

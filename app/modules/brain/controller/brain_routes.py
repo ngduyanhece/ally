@@ -181,41 +181,44 @@ async def create_brain_endpoint(
 		teacher_runtime_id=str(teacher_runtime.id),
 	)
 	# create brain entity
-	new_brain = brain_Service.create_brain(
-		brain_with_runtime,
-	)
+	try: 
+		new_brain = brain_Service.create_brain(
+			brain_with_runtime,
+		)
+			
+		default_brain = brain_Service.get_user_default_brain(current_user.id)
+		if default_brain:
+			logger.info(f"Default brain already exists for user {current_user.id}")
+			brain_Service.create_brain_user(
+				user_id=current_user.id,
+				brain_id=new_brain.id,
+				rights=RoleEnum.Owner,
+				is_default_brain=False,
+			)
+		else:
+			logger.info(
+				f"Default brain does not exist for user {current_user.id}. It will be created."
+			)
+			brain_Service.create_brain_user(
+				user_id=current_user.id,
+				brain_id=new_brain.id,
+				rights=RoleEnum.Owner,
+				is_default_brain=True,
+			)
 		
-	default_brain = brain_Service.get_user_default_brain(current_user.id)
-	if default_brain:
-		logger.info(f"Default brain already exists for user {current_user.id}")
-		brain_Service.create_brain_user(
-			user_id=current_user.id,
-			brain_id=new_brain.id,
+		return FullBrainEntityWithRights(
+			id=new_brain.id,
+			name=new_brain.name,
+			description=new_brain.description,
+			status=new_brain.status,
+			prompt_id=new_brain.prompt_id,
+			runtime=runtime,
+			teacher_runtime=teacher_runtime,
+			last_update=new_brain.last_update,
 			rights=RoleEnum.Owner,
-			is_default_brain=False,
 		)
-	else:
-		logger.info(
-			f"Default brain does not exist for user {current_user.id}. It will be created."
-		)
-		brain_Service.create_brain_user(
-			user_id=current_user.id,
-			brain_id=new_brain.id,
-			rights=RoleEnum.Owner,
-			is_default_brain=True,
-		)
-	
-	return FullBrainEntityWithRights(
-		id=new_brain.id,
-		name=new_brain.name,
-		description=new_brain.description,
-		status=new_brain.status,
-		prompt_id=new_brain.prompt_id,
-		runtime=runtime,
-		teacher_runtime=teacher_runtime,
-		last_update=new_brain.last_update,
-		rights=RoleEnum.Owner,
-	)
+	except Exception as e:
+		raise HTTPException(status_code=400, detail=str(e))
 
 # update existing brain
 @brain_router.put(
@@ -244,10 +247,11 @@ async def update_brain_endpoint(
 			status_code=404,
 			detail="Brain not found",
 		)
-
-	update_brain = brain_Service.update_brain_by_id(brain_id, brain_to_update)
-
-	return update_brain
+	try:
+		update_brain = brain_Service.update_brain_by_id(brain_id, brain_to_update)
+		return update_brain
+	except Exception as e:
+		raise HTTPException(status_code=400, detail=str(e))
 
 # delete existing brain
 @brain_router.delete(
