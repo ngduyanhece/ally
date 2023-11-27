@@ -1,6 +1,6 @@
 from app.models.databases.supabase.meta_brains import CreateMetaBrainProperties
 from app.models.meta_brain_entity import MetaBrainEntity
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.meta_brain.create_meta_brain import create_meta_brain
 from app.repository.meta_brain.create_meta_brain_user import \
     create_meta_brain_user

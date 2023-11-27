@@ -15,8 +15,8 @@ class GetChatHistoryOutput(BaseModel):
     user_message: str
     assistant: str
     message_time: str
-    prompt_title: Optional[str] | None
-    brain_name: Optional[str] | None
+    prompt_id: Optional[str] | None
+    brain_id: Optional[str] | None
 
     def dict(self, *args, **kwargs):
         chat_history = super().model_dump(*args, **kwargs)
@@ -26,9 +26,9 @@ class GetChatHistoryOutput(BaseModel):
         return chat_history
 
 
-def get_chat_history(chat_id: str) -> List[GetChatHistoryOutput]:
+def get_chat_history(chat_id: str, n_last_history=1) -> List[GetChatHistoryOutput]:
     supabase_db = get_supabase_db()
-    history: List[dict] = supabase_db.get_chat_history(chat_id).data
+    history: List[dict] = supabase_db.get_chat_history(chat_id).data[-n_last_history:]
     if history is None:
         return []
     else:
@@ -50,8 +50,8 @@ def get_chat_history(chat_id: str) -> List[GetChatHistoryOutput]:
                     user_message=message.user_message,
                     assistant=message.assistant,
                     message_time=message.message_time,
-                    brain_name=brain.name if brain else None,
-                    prompt_title=prompt.title if prompt else None,
+                    brain_id=str(brain.id) if brain else None,
+                    prompt_id=str(prompt.id) if prompt else None,
                 )
             )
         return enriched_history

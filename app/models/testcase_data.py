@@ -9,11 +9,12 @@ class TestCaseDataDescription(BaseModel):
 class TestCaseDataEntity(BaseModel):
 	testcase_data_id: UUID
 	description: str
-	input: str
+	text_input: str
 	reference_output: str
 	context: str
 	last_update: str
-
+	chat_history: str
+	
 	def dict(self, *args, **kwargs):
 		test_case_dict = super().model_dump(*args, **kwargs)
 		return test_case_dict

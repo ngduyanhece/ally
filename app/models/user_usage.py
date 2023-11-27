@@ -1,7 +1,7 @@
 from app.logger import get_logger
 from app.models.databases.supabase.supabase import SupabaseDB
 from app.models.settings import get_supabase_db
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 
 logger = get_logger(__name__)
 

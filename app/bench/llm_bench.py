@@ -1,3 +1,5 @@
+
+
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -7,7 +9,7 @@ from app.llm.llm_brain import LLMBrain
 from app.logger import get_logger
 from app.models.brain_entity import BrainEntity
 from app.models.chats import ChatInput
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.brain.create_brain_testrun_for_brain_testcase_id import \
     create_brain_testrun_for_brain_testcase_id
 from app.repository.brain.get_brain_by_id import get_brain_by_id

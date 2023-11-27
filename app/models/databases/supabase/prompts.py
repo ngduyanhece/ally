@@ -5,8 +5,9 @@ from pydantic import BaseModel
 
 from app.models.databases.repository import Repository
 from app.models.prompt import (MinimalPromptEntity, Prompt,
-                               PromptInputTemplate, PromptOutputTemplate,
-                               PromptStatusEnum)
+                               PromptInputTemplate, PromptInputTemplateEntity,
+                               PromptOutputTemplate,
+                               PromptOutputTemplateEntity, PromptStatusEnum)
 
 
 class CreatePromptProperties(BaseModel):
@@ -14,8 +15,6 @@ class CreatePromptProperties(BaseModel):
 
 	title: str
 	content: str
-	input_template: list[PromptInputTemplate]
-	output_template: list[PromptOutputTemplate]
 	status: PromptStatusEnum = PromptStatusEnum.private
 
 
@@ -24,8 +23,6 @@ class PromptUpdatableProperties(BaseModel):
 
 	title: Optional[str]
 	content: Optional[str]
-	input_template: Optional[list[PromptInputTemplate]]
-	output_template: Optional[list[PromptOutputTemplate]]
 	status: Optional[PromptStatusEnum]
 
 
@@ -34,6 +31,18 @@ class DeletePromptResponse(BaseModel):
 
 	status: str = "delete"
 	prompt_id: UUID
+
+class PromptInputTemplateProperties(BaseModel):
+		"""Properties that can be received on prompt input template creation"""
+		
+		name: str
+		description: str
+
+class PromptOutputTemplateProperties(BaseModel):
+		"""Properties that can be received on prompt input template creation"""
+		
+		name: str
+		description: str
 
 
 class Prompts(Repository):
@@ -57,32 +66,35 @@ class Prompts(Repository):
 			)
 			.execute()
 		)
-		for template in prompt.input_template:
-			self.db.from_("prompt_input_templates").insert(
-				{
-					"name": template.name,
-					"description": template.description,
-					"prompt_id": prompt_response.data[0]["id"],
-				}
-			).execute()
-		for template in prompt.output_template:
-			self.db.from_("prompt_output_templates").insert(
-				{
-					"name": template.name,
-					"description": template.description,
-					"prompt_id": prompt_response.data[0]["id"],
-				}
-			).execute()
+		# create input template and output template for a prompt
+		# TODO: will let user create input template and output template
+		# for now, we will create default input template and output template
+
+		input_template = self.create_prompt_input_template_by_prompt_id(
+			prompt_id=prompt_response.data[0]["id"],
+			prompt_input_template=PromptInputTemplateProperties(
+				name="text_input",
+				description="input from human",
+			)
+		)
+
+		output_template = self.create_prompt_output_template_by_prompt_id(
+			prompt_id=prompt_response.data[0]["id"],
+			prompt_output_template=PromptOutputTemplateProperties(
+				name="output",
+				description="this is the final output from the system",
+			)
+		)
 
 		prompt_entity = Prompt(
 			**prompt_response.data[0],
-			input_template=prompt.input_template,
-			output_template=prompt.output_template,
+			input_template=[PromptInputTemplateEntity(**input_template.dict())],
+			output_template=[PromptOutputTemplateEntity(**output_template.dict())],
 		)
 		
 		return prompt_entity
 
-	def delete_prompt_by_id(self, prompt_id: UUID) -> DeletePromptResponse:
+	def delete_prompt_by_id(self, prompt_id: UUID):
 		"""
 		Delete a prompt by id
 		Args:
@@ -91,18 +103,39 @@ class Prompts(Repository):
 		Returns:
 		A dictionary containing the status of the delete and prompt_id of the deleted prompt
 		"""
-		response = (
+		prompt_response = (
 			self.db.from_("prompts")
 			.delete()
 			.filter("id", "eq", prompt_id)
 			.execute()
 			.data
 		)
+		if prompt_response == []:
+			raise Exception(404, "Prompt not found")
+		
+		prompt_input_template_response = (
+			self.db.from_("prompt_input_templates")
+			.delete()
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+			.data
+		)
 
-		if response == []:
-			raise HTTPException(404, "Prompt not found")
+		prompt_output_template_response = (
+			self.db.from_("prompt_output_templates")
+			.delete()
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+			.data
+		)
+	
+		for input_template in prompt_input_template_response:
+			self.delete_prompt_input_template_by_id(input_template["input_template_id"])
+		
+		for output_template in prompt_output_template_response:
+			self.delete_prompt_output_template_by_id(output_template["output_template_id"])
 
-		return DeletePromptResponse(status="deleted", prompt_id=prompt_id)
+		return prompt_response[0]
 
 	def get_prompt_by_id(self, prompt_id: UUID) -> Prompt | None:
 		"""
@@ -178,29 +211,28 @@ class Prompts(Repository):
 			.filter("id", "eq", prompt_id)
 			.execute()
 		).data
-
 		if prompt_response == []:
-			return None
-		for template in prompt.input_template:
-			self.db.from_("prompt_input_templates").update(
-				{
-					"name": template.name,
-					"description": template.description
-				}
-			).filter("prompt_id", "eq", prompt_id).execute()
+				return None
 
-		for template in prompt.output_template:
-			self.db.from_("prompt_output_templates").update(
-				{
-					"name": template.name,
-					"description": template.description
-				}
-			).filter("prompt_id", "eq", prompt_id).execute()
+		# get prompt input template and output template
+		input_template = (
+			self.db.from_("prompt_input_templates")
+			.select("*")
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+		).data
+
+		output_template = (
+			self.db.from_("prompt_output_templates")
+			.select("*")
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+		).data
 		
 		return Prompt(
 			**prompt_response[0],
-			input_template=prompt.input_template,
-			output_template=prompt.output_template,
+			input_template=[PromptInputTemplateEntity(**template) for template in input_template],
+			output_template=[PromptOutputTemplateEntity(**template) for template in output_template],
 		)
 	
 	def get_user_prompts(self, user_id: UUID) -> list[MinimalPromptEntity]:
@@ -217,4 +249,209 @@ class Prompts(Repository):
 		).data
 
 		return response
-		
+	
+	def get_all_prompt_input_template_by_prompt_id(
+		self, prompt_id: UUID
+	) -> list[PromptInputTemplate]:
+		"""
+		List all prompt input template for a prompt
+		"""
+		response = (
+			self.db.from_("prompt_input_templates")
+			.select("*")
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+		).data
+
+		return response
+	
+	def get_prompt_input_template_by_id(
+		self, prompt_input_template_id: UUID
+	) -> PromptInputTemplate | None:
+		"""
+		Get a prompt input template by id
+		"""
+		response = (
+			self.db.from_("prompt_input_templates")
+			.select("*")
+			.filter("input_template_id", "eq", prompt_input_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptInputTemplate(
+			**response[0],
+		)
+	
+	def create_prompt_input_template_by_prompt_id(
+		self, prompt_id: UUID, prompt_input_template: PromptInputTemplateProperties
+	) -> PromptInputTemplate:
+		"""
+		Create a prompt input template
+		"""
+		prompt_response = (
+			self.db.from_("prompt_input_templates")
+			.insert(
+				{
+					"name": prompt_input_template.name,
+					"description": prompt_input_template.description,
+					"prompt_id": str(prompt_id),
+				}
+			)
+			.execute()
+		)
+		return PromptInputTemplate(
+			**prompt_response.data[0],
+		)
+	
+	def update_prompt_input_template_by_id(
+		self,
+		prompt_input_template_id: UUID,
+		prompt_input_template: PromptInputTemplateProperties
+	) -> PromptInputTemplate | None:
+		"""
+		Update a prompt input template
+		"""
+		response = (
+			self.db.from_("prompt_input_templates")
+			.update(
+				{
+					"name": prompt_input_template.name,
+					"description": prompt_input_template.description,
+				}
+			)
+			.filter("input_template_id", "eq", prompt_input_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptInputTemplate(
+			**response[0],
+		)
+	
+	def delete_prompt_input_template_by_id(
+		self, prompt_input_template_id: UUID
+	) -> PromptInputTemplate | None:
+		"""
+		Delete a prompt input template
+		"""
+		response = (
+			self.db.from_("prompt_input_templates")
+			.delete()
+			.filter("input_template_id", "eq", prompt_input_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptInputTemplate(
+			**response[0],
+		)
+	
+	def get_all_prompt_output_template_by_prompt_id(
+		self, prompt_id: UUID
+	) -> list[PromptOutputTemplate]:
+		"""
+		List all prompt output template for a prompt
+		"""
+		response = (
+			self.db.from_("prompt_output_templates")
+			.select("*")
+			.filter("prompt_id", "eq", prompt_id)
+			.execute()
+		).data
+
+		return response
+	
+	def get_prompt_output_template_by_id(
+			self, prompt_output_template_id: UUID
+	) -> PromptOutputTemplate | None:
+		"""
+		Get a prompt output template by id
+		"""
+		response = (
+			self.db.from_("prompt_output_templates")
+			.select("*")
+			.filter("output_template_id", "eq", prompt_output_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptOutputTemplate(
+			**response[0],
+		)
+	
+	def create_prompt_output_template_by_prompt_id(
+		self, prompt_id: UUID, prompt_output_template: PromptOutputTemplateProperties
+	) -> PromptOutputTemplate:
+		"""
+		Create a prompt output template
+		"""
+		prompt_response = (
+			self.db.from_("prompt_output_templates")
+			.insert(
+				{
+					"name": prompt_output_template.name,
+					"description": prompt_output_template.description,
+					"prompt_id": str(prompt_id),
+				}
+			)
+			.execute()
+		)
+		return PromptOutputTemplate(
+			**prompt_response.data[0],
+		)
+	
+	def update_prompt_output_template_by_id(
+		self,
+		prompt_output_template_id: UUID,
+		prompt_output_template: PromptOutputTemplateProperties
+	) -> PromptOutputTemplate | None:
+		"""
+		Update a prompt output template
+		"""
+		response = (
+			self.db.from_("prompt_output_templates")
+			.update(
+				{
+					"name": prompt_output_template.name,
+					"description": prompt_output_template.description,
+				}
+			)
+			.filter("output_template_id", "eq", prompt_output_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptOutputTemplate(
+			**response[0],
+		)
+	
+	def delete_prompt_output_template_by_id(
+		self, prompt_output_template_id: UUID
+	) -> PromptOutputTemplate | None:
+		"""
+		Delete a prompt output template
+		"""
+		response = (
+			self.db.from_("prompt_output_templates")
+			.delete()
+			.filter("output_template_id", "eq", prompt_output_template_id)
+			.execute()
+		).data
+
+		if response == []:
+			return None
+
+		return PromptOutputTemplate(
+			**response[0],
+		)

@@ -14,7 +14,7 @@ class TestCaseData(Repository):
 		response = self.db.table("testcase_data"). \
 			insert({
 						"description": description,
-						"input": input,
+						"text_input": input,
 						"reference_output": reference_output,
 						"context": context}).execute()
 		return response
@@ -55,4 +55,43 @@ class TestCaseData(Repository):
 				context=data["testcase_data"]["context"],
 				last_update=data["testcase_data"]["last_update"]
 			))
+		return testcase_data
+	
+	def get_all_testcase_data_from_a_dataset(
+		self, dataset_id: UUID) -> List[TestCaseDataEntity]:
+		response = (
+			self.db.from_("datasets_testcase_data")
+			.select("dataset_id, testcase_data (testcase_data_id, description, text_input, reference_output, context, last_update)")
+			.filter("dataset_id", "eq", dataset_id)
+			.execute()
+		)
+		testcase_data: List[TestCaseDataEntity] = []
+		for data in response.data:
+				testcase_data.append(TestCaseDataEntity(
+					testcase_data_id=data["testcase_data"]["testcase_data_id"],
+					description=data["testcase_data"]["description"],
+					text_input=data["testcase_data"]["text_input"],
+					reference_output=data["testcase_data"]["reference_output"],
+					context=data["testcase_data"]["context"],
+					chat_history="no chat history given",
+					last_update=data["testcase_data"]["last_update"]
+				))
+		return testcase_data
+	
+	def get_testcase_data_by_id(self, testcase_data_id: UUID) -> TestCaseDataEntity:
+		response = (
+			self.db.from_("testcase_data")
+			.select("id: testcase_data_id, description, text_input, reference_output, context, last_update")
+			.filter("testcase_data_id", "eq", testcase_data_id)
+			.execute()
+		)
+		testcase_data = TestCaseDataEntity(
+			testcase_data_id=response.data[0]["id"],
+			description=response.data[0]["description"],
+			text_input=response.data[0]["text_input"],
+			reference_output=response.data[0]["reference_output"],
+			context=response.data[0]["context"],
+			chat_history="no chat history given",
+			last_update=response.data[0]["last_update"]
+		)
 		return testcase_data

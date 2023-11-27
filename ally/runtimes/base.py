@@ -1,57 +1,27 @@
 import enum
-from abc import ABC
 from typing import Any, Dict, List, Optional
 
 from langchain.chains.llm import LLMChain
-from langchain.chat_models import ChatOpenAI
 from langchain.llms.base import BaseLLM
-from langchain.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts.chat import (ChatPromptTemplate,
                                     HumanMessagePromptTemplate,
                                     SystemMessagePromptTemplate)
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 from tqdm import tqdm
 
 from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_text
-from ally.utils.retry_parser import RetryWithErrorOutputParser
 
 tqdm.pandas()
-
-
-class Runtime(BaseModel, ABC):
-	"""
-	Base class representing a generic runtime environment.
-
-	Attributes:
-		verbose (bool): Flag indicating if runtime outputs should be verbose.
-		Defaults to False.
-	"""
-	verbose: bool = False
-
-	@model_validator(mode='after')
-	def init_runtime(self) -> 'Runtime':
-			"""Initializes the runtime.
-
-			This method should be used to validate and potentially initialize the runtime instance.
-
-			Returns:
-					Runtime: The initialized runtime instance.
-			"""
-			return self
-
 	
-class LLMRuntimeType(enum.Enum):
-	STUDENT = 'student'
-	TEACHER = 'teacher'
 	
-class LLMRuntimeModelType(enum.Enum):
+class RuntimeModelType(enum.Enum):
 	"""Enumeration for LLM runtime model types."""
 	OpenAI = 'OpenAI'
 	Transformers = 'Transformers'
 
-class LLMRuntime(Runtime):
+class Runtime(BaseModel):
 	"""
 	Class representing an LLM runtime environment.
 
@@ -59,11 +29,8 @@ class LLMRuntime(Runtime):
 		llm_runtime_type (LLMRuntimeModelType): Type of the LLM runtime. Defaults to OpenAI.
 		llm_params (Dict[str, str]): Parameters for the LLM runtime.
 	"""
-	llm_runtime_type: LLMRuntimeType = LLMRuntimeType.STUDENT
-	llm_runtime_model_type: LLMRuntimeModelType = LLMRuntimeModelType.OpenAI
-	llm_params: Dict[str, str] = {
-		'model': 'gpt-3.5-turbo-instruct',
-	}
+	verbose: bool = False
+	llm_params: Dict[str, str] = {}
 	_llm: BaseLLM
 	_chain: LLMChain
 	_llm_prompt_template: str
@@ -72,36 +39,27 @@ class LLMRuntime(Runtime):
 		arbitrary_types_allowed = True
 	
 	def _create_chain(self):
-		if self.llm_runtime_model_type.value == LLMRuntimeModelType.OpenAI.value:
-			self._llm = ChatOpenAI(
-				**self.llm_params
-			)
-		elif self.llm_runtime_model_type.value == LLMRuntimeModelType.Transformers.value:
-			self._llm = HuggingFacePipeline(
-				**self.llm_params
-			)
-		else:
-			raise NotImplementedError(f'LLM runtime type {self.llm_runtime_model_type} is not implemented.')
-		self._chain = LLMChain(
-			llm=self._llm,
-			prompt=self._llm_prompt_template,
-		)
-
-	def init_runtime(self) -> 'LLMRuntime':
-		"""Initializes the LLM runtime environment.
-
-		Creates an LLM instance based on the runtime type and parameters.
-
-		Returns:
-				LLMRuntime: Initialized runtime instance.
-		"""
-		return self
-
+		# if self.llm_runtime_model_type.value == RuntimeModelType.OpenAI.value:
+		# 	self._llm = ChatOpenAI(
+		# 		**self.llm_params
+		# 	)
+		# elif self.llm_runtime_model_type.value == RuntimeModelType.Transformers.value:
+		# 	self._llm = HuggingFacePipeline(
+		# 		**self.llm_params
+		# 	)
+		# else:
+		# 	raise NotImplementedError(f'LLM runtime type {self.llm_runtime_model_type} is not implemented.')
+		# self._chain = LLMChain(
+		# 	llm=self._llm,
+		# 	prompt=self._llm_prompt_template,
+		# )
+		pass
+	
 	def _process_record(
 		self,
 		record,
 		chain,
-		output_parser,
+		output_parser=None,
 	) -> Dict[str, Any]:
 		"""
 		Processes a single record using langchain chain
@@ -125,17 +83,18 @@ class LLMRuntime(Runtime):
 		result = chain.run(
 				verified_input
 		)
-		if not output_parser:
-				verified_output = {'': str(result)}
+		# TODO fix the output parser later
+		if output_parser is None:
+			verified_output = {'output': str(result)}
 		else:
 			try:
 				verified_output = output_parser.parse(result)
 			except Exception as e:
-				retry_parser = RetryWithErrorOutputParser.from_llm(
-					parser=output_parser, llm=self._llm, max_retries=2)
-				verified_output = retry_parser.parse_with_chat_prompt_template(
-					result, self._llm_prompt_template, verified_input)
-
+				verified_output = {'output': str(result)}
+				# retry_parser = RetryWithErrorOutputParser.from_llm(
+				# 	parser=output_parser, llm=self._llm, max_retries=1)
+				# verified_output = retry_parser.parse_with_chat_prompt_template(
+				# 	result, self._llm_prompt_template, verified_input)
 		return verified_output
 	
 	def get_input_prompt(self, input_template: str) -> HumanMessagePromptTemplate:
@@ -195,7 +154,7 @@ class LLMRuntime(Runtime):
 		self._create_chain()
 		return self._chain, output_parser
 
-	def process_record(
+	def record_to_record(
 		self,
 		record: Dict[str, Any],
 		input_template: str,
@@ -212,6 +171,7 @@ class LLMRuntime(Runtime):
 		Returns:
 				Dict[str, Any]: The processed record.
 		"""
+		# TODO will fix the output template later
 		chain, output_parser = self._prepare_chain_and_params(
 			input_template, output_template, instruction_template)
 		output = self._process_record(
@@ -221,7 +181,7 @@ class LLMRuntime(Runtime):
 		)
 		return output
 	
-	def process_batch(
+	def batch_to_batch(
 		self,
 		batch: InternalDataFrame,
 		input_template: str,
@@ -241,15 +201,46 @@ class LLMRuntime(Runtime):
 		Returns:
 				InternalDataFrame: The processed batch of records.
 		"""
-				
+		# TODO will fix the output template later		
 		chain, output_parser = self._prepare_chain_and_params(
 			input_template, output_template, instruction_template)
-		print_text(chain.input_keys)
 		output = batch.progress_apply(
 				self._process_record,
 				axis=1,
 				result_type='expand',
 				chain=chain,
-				output_parser=output_parser
+				output_parser=output_parser,
 		)
 		return output
+
+	def record_to_batch(
+		self,
+		record: Dict[str, Any],
+		input_template: str,
+		output_template: Optional[List[Dict]] = None,
+		instruction_template: Optional[str] = None,
+		output_batch_size: int = 1
+	) -> InternalDataFrame:
+		"""
+			Processes a record and return a batch.
+
+			Args:
+				record (Dict[str, str]): The record to process.
+				input_template (str): The input template.
+				instructions_template (str): The instructions template.
+				output_template (str): The output template.
+				instruction_template (str): The instruction template.
+				output_batch_size (int): The batch size for the output. Defaults to 1..
+			Returns:
+				InternalDataFrame: The processed batch.
+		"""
+		batch = InternalDataFrame([record] * output_batch_size)
+		return self.batch_to_batch(
+			batch=batch,
+			input_template=input_template,
+			output_template=output_template,
+			instruction_template=instruction_template,
+		)
+
+			 
+	

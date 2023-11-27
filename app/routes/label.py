@@ -6,7 +6,7 @@ from fastapi.params import Depends
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.logger import get_logger
 from app.models.chats import MessageLabel, MessageLabelOutput
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.chat.create_message_label_by_id import \
     crate_message_label_by_id
 from app.repository.chat.delete_message_label_by_id import \

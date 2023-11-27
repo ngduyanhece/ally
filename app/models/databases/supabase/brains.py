@@ -5,11 +5,12 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.logger import get_logger
-from app.models.brain_entity import (BrainEntity, InfosBrainEntity,
-                                     MinimalBrainEntity, PublicBrain)
-from app.models.brain_testsuite import (BrainTestCaseEntity,
-                                        BrainTestSuiteEntity)
+from app.models.brain_entity import (BrainEntity, FullBrainEntity,
+                                     InfosBrainEntity, MinimalBrainEntity,
+                                     PublicBrain)
+from app.models.brain_testsuite import BrainTestSuiteEntity
 from app.models.databases.repository import Repository
+from app.repository.runtime.get_runtime_by_id import get_runtime_by_id
 
 logger = get_logger(__name__)
 
@@ -18,10 +19,6 @@ class CreateBrainProperties(BaseModel):
 	name: Optional[str] = "Default brain"
 	description: Optional[str] = "This is a description"
 	status: Optional[str] = "private"
-	model: Optional[str] = "gpt-3.5-turbo" 
-	temperature: Optional[float] = 0.0
-	max_tokens: Optional[int] = 256
-	openai_api_key: Optional[str] = None
 	prompt_id: Optional[UUID] = None
 
 	def dict(self, *args, **kwargs):
@@ -29,11 +26,14 @@ class CreateBrainProperties(BaseModel):
 		if brain_dict.get("prompt_id"):
 			brain_dict["prompt_id"] = str(brain_dict.get("prompt_id"))
 		return brain_dict
-
-class CreatedBrainOutput(BaseModel):
-	brain_id: UUID
-	name: str
-	rights: str
+	
+class CreateFullBrainProperties(BaseModel):
+	name: Optional[str] = "Default brain"
+	description: Optional[str] = "This is a description"
+	status: Optional[str] = "private"
+	prompt_id: Optional[UUID] = None
+	runtime_id: Optional[str] = None
+	teacher_runtime_id: Optional[str] = None
 
 class BrainUpdatableProperties(BaseModel):
 	name: Optional[str]
@@ -44,6 +44,8 @@ class BrainUpdatableProperties(BaseModel):
 	openai_api_key: Optional[str]
 	status: Optional[str]
 	prompt_id: Optional[UUID]
+	runtime_id: Optional[UUID]
+	teacher_runtime_id: Optional[UUID]
 
 	def dict(self, *args, **kwargs):
 		brain_dict = super().model_dump(*args, **kwargs)
@@ -77,25 +79,32 @@ class Brain(Repository):
 	def __init__(self, supabase_client):
 		self.db = supabase_client
 
-	def create_brain(self, brain: CreateBrainProperties):
-		response = (self.db.table("brains").insert(brain.dict())).execute()
+	def create_brain(self, brain: CreateFullBrainProperties):
+		response = (self.db.table("brains").insert(brain.model_dump())).execute()
+		# convert runtime_id and teacher_runtime_id to string
 		return BrainEntity(**response.data[0])
 
-	def get_user_brains(self, user_id) -> list[MinimalBrainEntity]:
+	def get_user_brains(self, user_id) -> list[FullBrainEntity]:
 		response = (
 			self.db.from_("brains_users")
-			.select("id:brain_id, rights, brains (brain_id, name, status)")
+			.select("id:brain_id, rights, brains (id, name, description, prompt_id, status, runtime_id, teacher_runtime_id)")
 			.filter("user_id", "eq", user_id)
 			.execute()
 		)
-		user_brains: list[MinimalBrainEntity] = []
+		user_brains: list[FullBrainEntity] = []
 		for item in response.data:
+			runtime = get_runtime_by_id(item["brains"]["runtime_id"])
+			teacher_runtime = get_runtime_by_id(item["brains"]["teacher_runtime_id"])
 			user_brains.append(
-				MinimalBrainEntity(
-					id=item["brains"]["brain_id"],
+				FullBrainEntity(
+					id=item["brains"]["id"],
 					name=item["brains"]["name"],
-					rights=item["rights"],
+					description=item["brains"]["description"],
 					status=item["brains"]["status"],
+					prompt_id=item["brains"]["prompt_id"],
+					runtime=runtime,
+					teacher_runtime=teacher_runtime,
+					last_update=item["brains"]["last_update"],
 				)
 			)
 			user_brains[-1].rights = item["rights"]
@@ -330,8 +339,8 @@ class Brain(Repository):
 	def get_brain_by_id(self, brain_id: UUID) -> BrainEntity | None:
 		response = (
 			self.db.from_("brains")
-			.select("id:brain_id, name, *")
-			.filter("brain_id", "eq", brain_id)
+			.select("id, name, *")
+			.filter("id", "eq", brain_id)
 			.execute()
 		).data
 

@@ -10,8 +10,8 @@ from app.models.databases.supabase.meta_brains import (
 from app.models.meta_brain_entity import (MetaBrainEntity,
                                           MinimalMetaBrainEntity,
                                           PublicMetaBrain)
-from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.brain.set_as_default_brain_for_user import \
     set_as_default_brain_for_user
 from app.repository.meta_brain.create_meta_brain import create_meta_brain

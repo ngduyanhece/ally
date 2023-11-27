@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.models.databases.supabase.emoji import RequestEmoji
 from app.models.message_emoji import MessageEmoji
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.emoji.handle_message_emoji import handle_message_emoji
 
 router = APIRouter()
