@@ -3,9 +3,8 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from modal import Function
-from modal.functions import FunctionCall
 
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.llm.llm_brain import LLMBrain
@@ -14,26 +13,20 @@ from app.llm.utils.get_brains_infos_for_meta_brain import \
     get_brain_infos_for_meta_brain
 from app.models.brain_entity import BrainEntity
 from app.models.brains import Brain
-from app.models.chat import Chat
 from app.models.chats import ChatInput, MetaChatInput
 from app.models.databases.supabase.supabase import SupabaseDB
 from app.models.meta_brain_entity import MetaBrainEntity
 from app.models.settings import get_supabase_db
-from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
+from app.modules.user.entity.user_identity import UserIdentity
+from app.modules.user.repository.get_user_identity import get_user_identity
 from app.repository.brain.get_brain_details import get_brain_details
-from app.repository.chat.create_chat import CreateChatProperties, create_chat
-from app.repository.chat.get_chat_by_id import get_chat_by_id
 from app.repository.chat.get_chat_history_with_notifications import (
     ChatItem, get_chat_history_with_notifications)
-from app.repository.chat.get_user_chats import get_user_chats
-from app.repository.chat.update_chat import (ChatUpdatableProperties,
-                                             update_chat)
 from app.repository.meta_brain.get_meta_brain_details import \
     get_meta_brain_details
 from app.repository.notification.remove_chat_notifications import \
     remove_chat_notifications
-from app.repository.user_identity.get_user_identity import get_user_identity
 from app.routes.authorizations.brain_authorization import \
     validate_brain_authorization
 from app.routes.authorizations.meta_brain_authorization import \
@@ -92,23 +85,6 @@ def check_user_requests_limit(
 	else:
 		pass
 
-# get all chats
-@router.get("/chats", dependencies=[Depends(AuthBearer())])
-async def get_chats(
-	current_user: UserIdentity = Depends(get_current_user)
-) -> List[Chat]:
-	"""
-	Retrieve all chats for the current user.
-
-	- `current_user`: The current authenticated user.
-	- Returns a list of all chats for the user.
-
-	This endpoint retrieves all the chats associated with the current authenticated user. It returns a list of chat objects
-	containing the chat ID and chat name for each chat.
-	"""
-	chats = get_user_chats(str(current_user.id))
-	return chats
-
 # delete one chat
 @router.delete(
 	"/chats/{chat_id}", dependencies=[Depends(AuthBearer())]
@@ -122,39 +98,6 @@ async def delete_chat(chat_id: UUID):
 
 	delete_chat_from_db(supabase_db=supabase_db, chat_id=chat_id)
 	return {"message": f"{chat_id}  has been deleted."}
-
-# update existing chat metadata
-@router.put(
-	"/chats/{chat_id}/metadata", dependencies=[Depends(AuthBearer())]
-)
-async def update_chat_metadata_handler(
-	chat_data: ChatUpdatableProperties,
-	chat_id: UUID,
-	current_user: UserIdentity = Depends(get_current_user),
-) -> Chat:
-	"""
-	Update chat attributes
-	"""
-
-	chat = get_chat_by_id(chat_id)  # pyright: ignore reportPrivateUsage=none
-	if str(current_user.id) != chat.user_id:
-		raise HTTPException(
-			status_code=403,  # pyright: ignore reportPrivateUsage=none
-			detail="You should be the owner of the chat to update it.",  # pyright: ignore reportPrivateUsage=none
-		)
-	return update_chat(chat_id=chat_id, chat_data=chat_data)
-
-# create new chat
-@router.post("/chats", dependencies=[Depends(AuthBearer())])
-async def create_chat_handler(
-	chat_data: CreateChatProperties,
-	current_user: UserIdentity = Depends(get_current_user),
-):
-	"""
-	Create a new chat with initial chat messages.
-	"""
-
-	return create_chat(user_id=current_user.id, chat_data=chat_data)
 
 # add new input to brain to chat
 @router.post(
@@ -248,22 +191,6 @@ async def create_brain_chat_input_handler(
 	except HTTPException as e:
 		raise e
 	
-@router.get(
-	"/chat/brain/result/{call_id}",
-	dependencies=[
-		Depends(
-			AuthBearer(),
-		),
-	],
-)
-async def get_brain_chat_results(call_id: str):
-	function_call = FunctionCall.from_id(call_id)
-	try:
-		result = function_call.get(timeout=0)
-	except TimeoutError:
-		return JSONResponse(content="", status_code=202)
-	return result
-
 @router.post(
 	"/metabrain/chat/{chat_id}/question",
 	dependencies=[

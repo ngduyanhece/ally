@@ -1,20 +1,9 @@
 from langchain.embeddings.openai import OpenAIEmbeddings
-from pydantic_settings import BaseSettings
 from supabase.client import Client, create_client
 
 from app.core.settings import settings
 from app.models.databases.supabase.supabase import SupabaseDB
 from app.vectorstore.supabase import CustomSupabaseVectorStore
-
-
-class BrainSettings(BaseSettings):
-    openai_api_key: str
-    anthropic_api_key: str
-    supabase_url: str
-    supabase_service_key: str
-    pg_database_url: str = "not implemented"
-    resend_api_key: str = "re_C2E5atQy_45Kmu4pkx1rrqscRML9BThFE"
-    resend_email_address: str = "onboarding@resend.dev"
 
 
 def get_supabase_client() -> Client:

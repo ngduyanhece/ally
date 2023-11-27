@@ -17,7 +17,8 @@ from app.models.databases.supabase.brains import (
     UpdateBrainTestcaseProperties, UpdateBrainTestsuiteProperties)
 from app.models.testcase_data import (TestCaseDataDescription,
                                       TestCaseDataEntity, TestRun)
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
+from app.modules.user.repository.get_user_identity import get_user_identity
 from app.repository.brain.create_brain_testcase_by_testsuite_id import \
     create_brain_testcase_by_test_suite_id
 from app.repository.brain.create_brain_testsuite_by_id import \
@@ -45,7 +46,6 @@ from app.repository.testcase_data.delete_testcase_data_by_id import \
     delete_testcase_data_by_id
 from app.repository.testcase_data.remove_testcase_data_to_brain_testcase import \
     remove_testcase_data_to_brain_testcase
-from app.repository.user_identity.get_user_identity import get_user_identity
 
 logger = get_logger(__name__)
 
@@ -317,6 +317,13 @@ async def add_question_to_user_simulator(
 	)
 	chat_answer = llm_user_simulator.generate_answer(chat_id, chat_input)
 	return chat_answer
+
+
+
+
+	
+
+
 
 
 	

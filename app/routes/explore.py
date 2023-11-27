@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.models.brains import Brain
 from app.models.settings import get_supabase_db
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.meta_brain.get_meta_brain_brains import \
     get_meta_brain_brains
 from app.routes.authorizations.brain_authorization import (

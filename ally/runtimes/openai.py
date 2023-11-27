@@ -2,13 +2,15 @@ import os
 from typing import Optional
 
 import openai
+from langchain.chains.llm import LLMChain
+from langchain.chat_models import ChatOpenAI
+from langchain.embeddings.openai import OpenAIEmbeddings
 
+from ally.runtimes.base import Runtime
 from ally.utils.logs import print_error
 
-from .base import LLMRuntime, LLMRuntimeModelType, LLMRuntimeType
 
-
-class OpenAIRuntime(LLMRuntime):
+class OpenAIRuntime(Runtime):
 	"""Runtime class specifically designed for OpenAI models.
 
 	This class is tailored to use OpenAI models, particularly GPT models.
@@ -24,9 +26,33 @@ class OpenAIRuntime(LLMRuntime):
 	"""
 		
 	api_key: Optional[str] = None
-	gpt_model_name: Optional[str] = "gpt-3.5-turbo-instruct"
+	gpt_model_name: Optional[str]
 	temperature: Optional[float] = 0.0
 	max_tokens: Optional[int] = 256
+
+	def __init__(
+		self,
+		api_key: str,
+		gpt_model_name: str,
+		temperature: float = 0.0,
+		max_tokens: int = 256,
+		**kwargs,
+	):
+		super().__init__(
+			api_key=api_key,
+			gpt_model_name=gpt_model_name,
+			temperature=temperature,
+			max_tokens=max_tokens,
+			**kwargs,
+		)
+		self._check_api_key()
+		self._check_model_availability()
+		self.llm_params = {
+			'model_name': self.gpt_model_name,
+			'temperature': self.temperature,
+			'openai_api_key': self.api_key,
+			'max_tokens': self.max_tokens,
+		}
 
 	def _check_api_key(self):
 		if self.api_key:
@@ -51,26 +77,18 @@ class OpenAIRuntime(LLMRuntime):
 				f'Try to change the runtime settings for {self.__class__.__name__}, for example:\n\n'
 				f'{self.__class__.__name__}(..., model="gpt-3.5-turbo")\n\n')
 			raise ValueError(f'Requested model {self.gpt_model_name} is not available in your OpenAI account.')
+		
+	def _create_chain(self):
+		self._llm = ChatOpenAI(
+			**self.llm_params
+		)
+		self._chain = LLMChain(
+			llm=self._llm,
+			prompt=self._llm_prompt_template,
+		)
 
-	def init_runtime(self):
-		self._check_api_key()
-		self._check_model_availability()
-
-		student_models = {'gpt-3.5-turbo-instruct', 'text-davinci-003'}
-		teacher_models = {'gpt-4', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-4-1106-preview', 'gpt-4-vision-preview'}
-
-		if self.gpt_model_name in student_models:
-			self.llm_runtime_type = LLMRuntimeType.STUDENT
-		elif self.gpt_model_name in teacher_models:
-			self.llm_runtime_type = LLMRuntimeType.TEACHER
-		else:
-			raise NotImplementedError(f'Not supported model: {self.gpt_model_name}.')
-
-		self.llm_runtime_model_type = LLMRuntimeModelType.OpenAI
-		self.llm_params = {
-			'model_name': self.gpt_model_name,
-			'temperature': self.temperature,
-			'openai_api_key': self.api_key,
-			'max_tokens': self.max_tokens,
-		}
-		return self
+	def get_embeddings(self) -> OpenAIEmbeddings:
+		"""Get the embeddings of the model."""
+		return OpenAIEmbeddings(
+			openai_api_key=self.llm_params["openai_api_key"],
+		)

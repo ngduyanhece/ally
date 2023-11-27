@@ -4,7 +4,7 @@ from ally.agents.base import Agent
 from ally.datasets.dataframe import DataFrameDataset
 from ally.environments.base import BasicEnvironment
 from ally.runtimes.openai import OpenAIRuntime
-from ally.skills.labeling.classification import ClassificationSkill
+from ally.skills.collection.classification import ClassificationSkill
 from app.core.settings import settings
 
 

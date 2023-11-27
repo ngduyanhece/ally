@@ -1,17 +1,15 @@
 from abc import ABC
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple
 
 from pydantic import BaseModel, Field, field_validator
 
-from ally.datasets.base import Dataset
-from ally.datasets.dataframe import DataFrameDataset
-from ally.environments.base import (BasicEnvironment, Environment,
-                                    GroundTruthSignal)
+from ally.environments.base import (Environment, EnvironmentFeedback,
+                                    StaticEnvironment)
 from ally.memories.base import Memory
 from ally.runtimes.base import Runtime
-from ally.skills.base import BaseSkill
+from ally.skills.base import Skill
 from ally.skills.skillset import LinearSkillSet, SkillSet
-from ally.utils.internal_data import InternalDataFrame, InternalDataFrameConcat
+from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_dataframe, print_text
 
 
@@ -29,12 +27,12 @@ class Agent(BaseModel, ABC):
 	teacher_runtimes (Dict[str, Runtime], optional): The runtimes available to the agent's teacher. Defaults to predefined runtimes.
 	default_teacher_runtime (str): The default runtime used by the agent's teacher. Defaults to 'openai-gpt3'.
 	"""
-	environment: Union[InternalDataFrame, Dataset, Environment]
+	environment: Environment = None
 	skills: SkillSet
 
 	memory: Memory = Field(default=None)
 	runtimes: Optional[Dict[str, Runtime]]
-	teacher_runtimes: Optional[Dict[str, Runtime]]
+	teacher_runtimes: Optional[Dict[str, Runtime]] = None
 	default_runtime: str = 'openai'
 	default_teacher_runtime: str = 'openai'
 
@@ -61,41 +59,48 @@ class Agent(BaseModel, ABC):
 			f"Default Teacher Runtime: {self.default_teacher_runtime}"
 		)
 	
-	@field_validator('environment')
+	@field_validator('environment', mode='before')
 	def environment_validator(cls, v) -> Environment:
 		"""
-		Validates and possibly transforms the environment attribute.
-
-		Args:
-			v (Union[Dataset, Environment]): The environment value to validate.
-
-		Returns:
-			Environment: The validated environment.
+		Validates and possibly transforms the environment attribute:
+		if the environment is an InternalDataFrame, it is transformed into a StaticEnvironment.
 		"""
 		if isinstance(v, InternalDataFrame):
-			v = DataFrameDataset(df=v)
-		if isinstance(v, Dataset):
-			v = BasicEnvironment(dataset=v)
+			v = StaticEnvironment(df=v)
 		return v
 	
 	@field_validator('skills', mode='before')
 	def skills_validator(cls, v) -> SkillSet:
 		"""
 		Validates and possibly transforms the skills attribute.
-
-		Args:
-			v (Union[SkillSet, BaseSkill, List[BaseSkill], Dict[str, BaseSkill]]): The skills value to validate.
-
-		Returns:
-			SkillSet: The validated set of skills.
 		"""
-			
 		if isinstance(v, SkillSet):
 			return v
-		elif isinstance(v, BaseSkill):
-			return LinearSkillSet(skills={v.name: v})
+		elif isinstance(v, Skill):
+			return LinearSkillSet(skills=[v])
 		else:
-			return LinearSkillSet(skills=v)
+			raise ValueError(f"skills must be of type SkillSet or Skill, not {type(v)}")
+	
+	# @model_validator(mode='after')
+	# def verify_input_parameters(self):
+	# 	"""
+	# 	Verifies that the input parameters are valid."""
+
+	# 	def _raise_default_runtime_error(val, runtime, runtimes, default_value):
+	# 		print_error(f"The Agent.{runtime} is set to {val}, "
+	# 			f"but this runtime is not available in the list: {list(runtimes)}. "
+	# 			f"Please choose one of the available runtimes and initialize the agent again, for example:\n\n"
+	# 			f"agent = Agent(..., {runtime}='{default_value}')\n\n"
+	# 			f"Make sure the default runtime is available in the list of runtimes. For example:\n\n"
+	# 			f"agent = Agent(..., runtimes={{'{default_value}': OpenAIRuntime(model='gpt-4')}})\n\n")
+	# 		raise ValueError(f"default runtime {val} not found in provided runtimes.")
+
+	# 	if self.default_runtime not in self.runtimes:
+	# 		_raise_default_runtime_error(self.default_runtime, 'default_runtime', self.runtimes, 'openai')
+		# if self.default_teacher_runtime not in self.teacher_runtimes:
+		# 	_raise_default_runtime_error(self.default_teacher_runtime, 'default_teacher_runtime', self.teacher_runtimes,
+		# 																	'openai-gpt4')
+		# return self
 	
 	def get_runtime(self, runtime: Optional[str] = None) -> Runtime:
 		"""
@@ -110,7 +115,7 @@ class Agent(BaseModel, ABC):
 		Raises:
 			ValueError: If the specified runtime is not found.
 		"""
-        
+				
 		if runtime is None:
 			runtime = self.default_runtime
 		if runtime not in self.runtimes:
@@ -139,7 +144,7 @@ class Agent(BaseModel, ABC):
 
 	def run(
 		self,
-		dataset: Optional[Union[Dataset, InternalDataFrame]] = None,
+		input: InternalDataFrame = None,
 		runtime: Optional[str] = None
 	) -> InternalDataFrame:
 		"""
@@ -152,23 +157,139 @@ class Agent(BaseModel, ABC):
 		Returns:
 			InternalDataFrame: The dataset with the agent's predictions.
 		"""
-		if dataset is None:
-			dataset = self.environment.as_dataset()
+		if input is None:
+			input = self.environment.get_data_batch()
 		runtime = self.get_runtime(runtime=runtime)
-		predictions = self.skills.apply(dataset, runtime=runtime)
+		predictions = self.skills.apply(input, runtime=runtime)
 		return predictions
 
+	def select_skill_to_train(
+		self, 
+		feedback: EnvironmentFeedback,
+		accuracy_threshold: float
+	) -> Tuple[str, str, float]:
+		"""
+		Selects the skill to train based on the feedback signal.
+
+		Args:
+			feedback (Feedback): The feedback signal.
+			accuracy_threshold (float): The accuracy threshold to use for selecting the skill to train.
+
+		Returns:
+			str: The name of the skill to train.
+			str: The name of the skill output to train.
+			float: The accuracy score of the skill to train.
+		"""
+
+		# Use ground truth signal to find the skill to improve
+		# TODO: what if it is not possible to estimate accuracy per skill?
+		accuracy = feedback.get_accuracy()
+		train_skill_name, train_skill_output, acc_score = '', '', None
+		for skill_output, skill_name in self.skills.get_skill_outputs().items():
+			if accuracy[skill_output] < accuracy_threshold:
+				train_skill_name, train_skill_output = skill_name, skill_output
+				acc_score = accuracy[skill_output]
+				break
+
+		return train_skill_name, train_skill_output, acc_score
+	
+	def pe_optimization(self, skill, examples, teacher_runtime):
+		teacher_instruction_template = """
+		You are a helpful assistant
+		"""
+		message = f"""
+		A prompt is a text paragraph that outlines the expected actions and instructs the model to \
+		generate a specific output. This prompt is concatenated with the input text, and the \
+		model then creates the required output. Formally, the prompt is a prefix to the input:
+		output = model(concatenate(prompt, input))
+		Model can produce erroneous output if the prompt is not well defined. \
+		In our collaboration, we’ll work together to refine a prompt. The process consists of two main steps:
+
+		## Step 1
+		I will provide you with the current prompt, how the prompt is concatenated with the input text
+		(i.e., "full template"), along with some example(s) that are associated with
+		this prompt. Each example contains the input, the final answer produced by the model, and the user feedback.
+		Your task is to analyze the examples, determining whether the
+		existing prompt is decsribing the task reflected by these examples precisely, and suggest
+		changes to the prompt.
+
+		## Step 2
+		Next, you will carefully review your reasoning in step 1, integrate the insights to craft a
+		new, optimized prompt.
+		## Current Prompt
+		{skill.instruction_template}
+
+		## Full Template
+		{{current prompt}}
+		{skill.input_template}
+		{skill.output_template}
+		## Examples
+		{examples}
+		## Instructions
+		For some of these examples, the user feedback points out that the model is not producing the correct output. \
+		This may be due to the prompt being misleading or not describing the task precisely. 
+
+		Please examine the example(s) carefully. Note that the user feedback should be considered as ground truth, but \
+		the prompts (task descriptions) may be incorrect and need modification.
+		For each example, provide reasoning according to the following template:
+
+		### Example <id>
+		Input: <input>
+		Output: <output>
+		Feedback: <feedback>
+		Is the output correct according to the feedback: <yes or no, and your reasoning>
+		To output the correct label, is it necessary to edit the prompt: <yes or no, and your
+		reasoning>
+		If yes, provide detailed analysis and actionable suggestions to edit the prompt: <analysis and
+		suggestions>
+		If yes, and you think there is some knowledge to learn to answer this example, please
+		provide the knowledge: <knowledge>
+		"""
+		reasoning = teacher_runtime.record_to_record(
+				record={'input': message},
+				instruction_template=teacher_instruction_template,
+				input_template="{input}",
+				output_template=[{
+					"name": "reasoning",
+					"description": "reasoning from the assistant"
+				}]
+		)['reasoning']
+
+		teacher_instruction_template = f"""
+		{reasoning}
+		"""
+		message = f"""
+		Now please carefully review your reasoning in Step 1 and help with Step 2: refining the prompt.
+		## Current prompt
+		{skill.instruction_template}
+		
+		## Instructions
+		- The new prompt should be concise and direct.
+		- The new prompt should should describe the task precisely and address the points raised in the user feedback.
+		- Include a few examples in the prompt to help the model learn the task, by providing inputs and outputs that follow full template.
+		- Reply only with the prompt. Do not include other text.
+		"""
+		new_prompt = teacher_runtime.record_to_record(
+				record={'input': message},
+				instruction_template=teacher_instruction_template,
+				input_template="{input}",
+				output_template=[{
+					"name": "output",
+					"description": "new prompt"
+				}]
+			)['output']
+		return new_prompt, reasoning
+  		
 	def learn(
 		self,
 		learning_iterations: int = 3,
 		accuracy_threshold: float = 0.9,
 		update_memory: bool = True,
-		request_environment_feedback: bool = True,
-		wait_for_environment_feedback: Optional[float] = None,
-		num_predictions_feedback: Optional[int] = None,
+		batch_size: Optional[int] = None,
+		num_feedbacks: Optional[int] = None,
 		runtime: Optional[str] = None,
 		teacher_runtime: Optional[str] = None,
-	) -> GroundTruthSignal:
+	):
 		"""
 		Enables the agent to learn and improve its skills based on interactions with its environment.
 
@@ -176,86 +297,55 @@ class Agent(BaseModel, ABC):
 			learning_iterations (int, optional): The number of iterations for learning. Defaults to 3.
 			accuracy_threshold (float, optional): The desired accuracy threshold to reach. Defaults to 0.9.
 			update_memory (bool, optional): Flag to determine if memory should be updated after learning. Defaults to True.
-			request_environment_feedback (bool, optional): Flag to determine if feedback should be requested from the environment. Defaults to True.
-			wait_for_environment_feedback (float, optional): The timeout in seconds to wait for environment feedback. Defaults to None.
-			num_predictions_feedback (int, optional): The number of predictions to request feedback for. Defaults to None.
+			num_feedbacks (int, optional): The number of predictions to request feedback for. Defaults to None.
 			runtime (str, optional): The runtime to be used for the learning process. Defaults to None.
 			teacher_runtime (str, optional): The teacher runtime to be used for the learning process. Defaults to None.
-		Returns:
-			GroundTruthSignal: The ground truth signal.
 		"""
-        
-		runtime = self.get_runtime(runtime=runtime)
-		teacher_runtime = self.get_teacher_runtime(runtime=teacher_runtime)
 
-		dataset = self.environment.as_dataset()
+		runtime: Runtime = self.get_runtime(runtime=runtime)
+		teacher_runtime: Runtime = self.get_teacher_runtime(runtime=teacher_runtime)
 
-		# Apply agent skills to dataset and get experience with predictions
-		predictions = self.skills.apply(dataset, runtime=runtime)
-
-		ground_truth_signal = None
-
+		experience = ""
+		final_instruction = ""
 		for iteration in range(learning_iterations):
-			print_text(f'\n\n=> Iteration #{iteration}: Comparing to ground truth, analyzing and improving ...')
-			# Request feedback from environment is necessary
-			if request_environment_feedback:
-				if num_predictions_feedback is not None:
-					# predictions_for_feedback = predictions.sample(num_predictions_feedback)
-					predictions_for_feedback = predictions.head(num_predictions_feedback)
-				else:
-					predictions_for_feedback = predictions
-				self.environment.request_feedback(self.skills, predictions_for_feedback)
 
-				# Compare predictions to ground truth -> get ground truth signal
-			ground_truth_signal = self.environment.compare_to_ground_truth(
-				self.skills,
-				predictions,
-				wait=wait_for_environment_feedback
-			)
+			print_text(f'\n\n=> Iteration #{iteration}: Getting feedback, analyzing and improving ...')
 
-			print_text(f'Comparing predictions to ground truth data ...')
-			print_dataframe(
-				InternalDataFrameConcat([predictions, ground_truth_signal.match], axis=1))
+			inputs = self.environment.get_data_batch(batch_size)
 
-			# Use ground truth signal to find the skill to improve
-			accuracy = ground_truth_signal.get_accuracy()
-			train_skill = self.skills.select_skill_to_improve(accuracy, accuracy_threshold)
-			if not train_skill:
-				print_text(f'No skill to improve found. Stopping learning process.')
-				break
-			# select the worst performing skill
-			print_text(f'Accuracy = {accuracy[train_skill.name] * 100:0.2f}%', style='bold red')
+			predictions = self.skills.apply(inputs, runtime=runtime)
 
-			skill_errors = ground_truth_signal.get_errors(train_skill.name)
+			feedback = self.environment.get_feedback(self.skills, predictions, num_feedbacks=num_feedbacks)
+			print('Predictions and feedback:')
+			fb = feedback.feedback.rename(columns=lambda x: x + '__fb' if x in predictions.columns else x)
+			analyzed_df = fb.merge(predictions, left_index=True, right_index=True)
+			print_dataframe(analyzed_df)
 
-			# 2. ANALYSIS PHASE: Analyze evaluation experience, optionally use long term memory
-			print_text(f'Analyze evaluation experience ...')
-			error_analysis = train_skill.analyze(
-				predictions=predictions,
-				errors=skill_errors,
-				student_runtime=runtime,
-				teacher_runtime=teacher_runtime,
-				memory=self.memory
-			)
-			print_text(f'Error analysis for skill "{train_skill.name}":\n')
-			print_text(error_analysis, style='green')
-			if self.memory and update_memory:
-				self.memory.remember(error_analysis, self.skills)
+			train_skill_name, train_skill_output, accuracy = self.select_skill_to_train(feedback, accuracy_threshold)
+			if not train_skill_name:
+				print_text('No skill to improve found. Continue learning...')
+				continue
 
-			# 3. IMPROVEMENT PHASE: Improve skills based on analysis
-			print_text(f"Improve \"{train_skill.name}\" skill based on analysis ...")
-			train_skill.improve(
-				error_analysis=error_analysis,
-				runtime=teacher_runtime,
-			)
-			print_text(f'Updated instructions for skill "{train_skill.name}":\n')
-			print_text(train_skill.instruction_template, style='bold green')
+			train_skill = self.skills[train_skill_name]
+			print_text(f'Output to improve: "{train_skill_output}" (Skill="{train_skill_name}")\n'
+                       f'Accuracy = {accuracy * 100:0.2f}%', style='bold red')
+			
+			examples = []
+			for row in analyzed_df.to_dict(orient='records'):
+				# if fb marked as NaN, skip
+				if not row[f'{train_skill_output}__fb']:
+					continue
+				output_template_str = " ".join([t["description"] + ":" + "{" + t["name"] + "}" for t in train_skill.output_template])
+				examples.append(
+						f'{train_skill.input_template.format(**row)}\n'
+						f'{output_template_str.format(**row)}\n'
+						f'Feedback: {row[f"{train_skill_output}__fb"]}\n\n'
+				)
+			new_instructions, reasoning = self.pe_optimization(train_skill, '\n'.join(examples), teacher_runtime)
+			experience += f"\n{reasoning}\n"
+			train_skill.instruction_template = new_instructions
+			final_instruction = new_instructions
+			print_text(f'{train_skill.instruction_template}', style='bold green')
 
-			# 4. RE-APPLY PHASE: Re-apply skills to dataset
-			print_text(f"Re-apply {train_skill.name} skill to dataset ...")
-			self.skills[train_skill.name] = train_skill
-			predictions = self.skills.apply(
-				predictions, runtime=runtime, improved_skill=train_skill.name)
-
-		print_text('Train is done!')
-		return ground_truth_signal
+		#return the best prompt and the accumulated experience
+		return final_instruction, experience

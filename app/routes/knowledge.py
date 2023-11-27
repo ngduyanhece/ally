@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.logger import get_logger
 from app.models.brains import Brain
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.files.delete_file import delete_file_from_storage
 from app.repository.files.generate_file_signed_url import \
     generate_file_signed_url

@@ -3,38 +3,27 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.routes.authorizations.types import RoleEnum
+from app.models.runtimes import RuntimeEntity
 
 
-class BrainEntity(BaseModel):
-    brain_id: UUID
-    name: str
-    description: Optional[str]
-    temperature: Optional[float]
-    model: Optional[str]
-    max_tokens: Optional[int]
-    openai_api_key: Optional[str]
-    status: Optional[str]
-    prompt_id: Optional[UUID]
-    last_update: str
-
-    @property
-    def id(self) -> UUID:
-        return self.brain_id
-
-    def dict(self, **kwargs):
-        data = super().model_dump(
-            **kwargs,
-        )
-        data["id"] = self.id
-        return data
-    
-
-class MinimalBrainEntity(BaseModel):
+class FullBrainEntity(BaseModel):
     id: UUID
     name: str
-    rights: RoleEnum
-    status: str
+    description: Optional[str]
+    status: Optional[str]
+    prompt_id: Optional[UUID]
+    runtime: Optional[RuntimeEntity]
+    teacher_runtime: Optional[RuntimeEntity]
+    last_update: str
+class BrainEntity(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    status: Optional[str]
+    prompt_id: Optional[UUID]
+    runtime_id: Optional[UUID]
+    teacher_runtime_id: Optional[UUID]
+    last_update: str
 
 class InfosBrainEntity(BaseModel):
     id: UUID

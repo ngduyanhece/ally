@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, Request
 from app.auth import AuthBearer, get_current_user
 from app.logger import get_logger
 from app.models import Brain, UserIdentity, UserUsage
+from app.modules.user.repository.get_user_identity import get_user_identity
 from app.repository.brain import get_user_default_brain
 from app.repository.user_identity import sign_in_user
-from app.repository.user_identity.get_user_identity import get_user_identity
 from app.repository.user_identity.update_user_properties import (
     UserSignInProperties, UserUpdatableProperties, update_user_properties)
 
@@ -39,7 +39,7 @@ async def get_user_endpoint(
     max_brain_size = userSettings.get("max_brain_size", 1000000000)
 
     date = time.strftime("%Y%m%d")
-    daily_chat_credit = userSettings.get("daily_chat_credit", 10)
+    daily_chat_credit = userSettings.get("daily_chat_credit", 1000)
 
     userDailyUsage = UserUsage(id=current_user.id)
     requests_stats = userDailyUsage.get_user_usage()

@@ -1,23 +1,7 @@
-import asyncio
-import os
 
 from celery import Celery
-from celery.schedules import crontab
-from fastapi import UploadFile
 
 from app.core.settings import settings
-from app.models.databases.supabase.notifications import \
-    NotificationUpdatableProperties
-from app.models.files import File
-from app.models.notifications import NotificationsStatusEnum
-from app.models.settings import get_supabase_client
-from app.repository.brain.update_brain_last_update_time import \
-    update_brain_last_update_time
-from app.repository.notification.update_notification import \
-    update_notification_by_id
-from app.repository.onboarding.remove_onboarding_more_than_x_days import \
-    remove_onboarding_more_than_x_days
-from app.utils.processors import filter_file
 
 CELERY_BROKER_URL = settings.celery_broker_url
 CELERY_BROKER_QUEUE_NAME = settings.celery_broker_queue_name
@@ -61,61 +45,62 @@ def process_file_and_notify(
     openai_api_key,
     notification_id=None,
 ):
-    supabase_client = get_supabase_client()
-    tmp_file_name = "tmp-file-" + file_name
-    tmp_file_name = tmp_file_name.replace("/", "_")
+    # supabase_client = get_supabase_client()
+    # tmp_file_name = "tmp-file-" + file_name
+    # tmp_file_name = tmp_file_name.replace("/", "_")
 
-    with open(tmp_file_name, "wb+") as f:
-        res = supabase_client.storage.from_("ally").download(file_name)
-        f.write(res)
-        f.seek(0)
-        file_content = f.read()
+    # with open(tmp_file_name, "wb+") as f:
+    #     res = supabase_client.storage.from_("ally").download(file_name)
+    #     f.write(res)
+    #     f.seek(0)
+    #     file_content = f.read()
 
-        # file_object = io.BytesIO(file_content)
-        upload_file = UploadFile(
-            file=f, filename=file_name.split("/")[-1], size=len(file_content)
-        )
+    #     # file_object = io.BytesIO(file_content)
+    #     upload_file = UploadFile(
+    #         file=f, filename=file_name.split("/")[-1], size=len(file_content)
+    #     )
 
-        file_instance = File(file=upload_file)
-        loop = asyncio.get_event_loop()
-        message = loop.run_until_complete(
-            filter_file(
-                file=file_instance,
-                enable_summarization=enable_summarization,
-                brain_id=brain_id,
-                openai_api_key=openai_api_key,
-                original_file_name=file_original_name,
-            )
-        )
+    #     file_instance = File(file=upload_file)
+    #     loop = asyncio.get_event_loop()
+    #     message = loop.run_until_complete(
+    #         filter_file(
+    #             file=file_instance,
+    #             enable_summarization=enable_summarization,
+    #             brain_id=brain_id,
+    #             openai_api_key=openai_api_key,
+    #             original_file_name=file_original_name,
+    #         )
+    #     )
 
-        f.close()
-        os.remove(tmp_file_name)
+    #     f.close()
+    #     os.remove(tmp_file_name)
 
-        if notification_id:
-            notification_message = {
-                "status": message["type"],
-                "message": message["message"],
-                "name": file_instance.file.filename if file_instance.file else "",
-            }
-            update_notification_by_id(
-                notification_id,
-                NotificationUpdatableProperties(
-                    status=NotificationsStatusEnum.Done,
-                    message=str(notification_message),
-                ),
-            )
-        update_brain_last_update_time(brain_id)
+    #     if notification_id:
+    #         notification_message = {
+    #             "status": message["type"],
+    #             "message": message["message"],
+    #             "name": file_instance.file.filename if file_instance.file else "",
+    #         }
+    #         update_notification_by_id(
+    #             notification_id,
+    #             NotificationUpdatableProperties(
+    #                 status=NotificationsStatusEnum.Done,
+    #                 message=str(notification_message),
+    #             ),
+    #         )
+    #     update_brain_last_update_time(brain_id)
 
-        return True
+    #     return True
+    pass
 
-@celery.task
-def remove_onboarding_more_than_x_days_task():
-    remove_onboarding_more_than_x_days(7)
+# @celery.task
+# def remove_onboarding_more_than_x_days_task():
+#     remove_onboarding_more_than_x_days(7)
 
 
-celery.conf.beat_schedule = {
-    "remove_onboarding_more_than_x_days_task": {
-        "task": f"{__name__}.remove_onboarding_more_than_x_days_task",
-        "schedule": crontab(minute="0", hour="0"),
-    },
-}
+# celery.conf.beat_schedule = {
+#     "remove_onboarding_more_than_x_days_task": {
+#         "task": f"{__name__}.remove_onboarding_more_than_x_days_task",
+#         "schedule": crontab(minute="0", hour="0"),
+#     },
+# }

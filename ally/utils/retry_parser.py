@@ -17,7 +17,7 @@ Completion:
 
 Above, the Completion did not satisfy the constraints given in the Prompt.
 Details: {error}
-Please try again:"""
+Please try again and do not include any special characters that may cause errors when parsing with json or yaml."""
 NAIVE_RETRY_WITH_ERROR_PROMPT = PromptTemplate.from_template(
     NAIVE_COMPLETION_RETRY_WITH_ERROR
 )
@@ -70,24 +70,25 @@ class RetryWithErrorOutputParser(BaseOutputParser[T]):
 				chat_prompt_template: ChatPromptTemplate,
 				verified_input: dict
 		) -> T:
-				retries = 0
+			retries = 0
 
-				while retries <= self.max_retries:
-						try:
-								return self.parser.parse(completion)
-						except OutputParserException as e:
-								if retries == self.max_retries:
-										raise e
-								else:
-										retries += 1
-										completion = self.retry_chain.run(
-												prompt=chat_prompt_template.format(**verified_input),
-												completion=completion,
-												error=repr(e),
-										)
-
-				raise OutputParserException("Failed to parse")
-
+			while retries <= self.max_retries:
+					try:
+							return self.parser.parse(completion)
+					except OutputParserException as e:
+							if retries == self.max_retries:
+									return {"output": completion}
+							else:
+									retries += 1
+									completion = self.retry_chain.run(
+											prompt=chat_prompt_template.format(**verified_input),
+											completion=completion,
+											error=repr(e),
+									)
+			# raise RuntimeError(
+			# 		"Unreachable code reached. This is a bug in the RetryWithErrorOutputParser."
+			# 	)
+		
 		def parse(self, completion: str) -> T:
 				raise NotImplementedError(
 						"This OutputParser can only be called by the `parse_with_prompt` method."

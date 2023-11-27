@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 
 from app.auth.auth_bearer import get_current_user
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.meta_brain.get_meta_brain_details import \
     get_meta_brain_details
 from app.repository.meta_brain.get_meta_brain_for_user import \

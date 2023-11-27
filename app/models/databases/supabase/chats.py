@@ -14,7 +14,6 @@ class CreateChatHistory(BaseModel):
     assistant: str
     prompt_id: Optional[UUID]
     brain_id: Optional[UUID]
-    context: Optional[str]
 
 class CreateUserSimulatorChatHistory(BaseModel):
     chat_id: UUID
@@ -76,7 +75,6 @@ class Chats(Repository):
                     "brain_id": str(chat_history.brain_id)
                     if chat_history.brain_id
                     else None,
-                    "context": chat_history.context,
                 }
             )
             .execute()

@@ -8,7 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
 
 from app.logger import get_logger
-from app.models.brains import Brain
+from app.models.brains_old import Brain
 from app.models.databases.supabase.supabase import SupabaseDB
 from app.models.settings import get_supabase_db
 from app.utils.file import compute_sha1_from_file

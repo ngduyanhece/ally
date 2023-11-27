@@ -8,7 +8,7 @@ from app.auth.auth_bearer import AuthBearer, get_current_user
 from app.models.brains import Brain
 from app.models.brains_subscription_invitations import BrainSubscription
 from app.models.prompt import PromptStatusEnum
-from app.models.user_identity import UserIdentity
+from app.modules.user.entity.user_identity import UserIdentity
 from app.repository.brain import create_brain_user
 from app.repository.brain.delete_brain_user import delete_brain_user
 from app.repository.brain.get_brain_by_id import get_brain_by_id

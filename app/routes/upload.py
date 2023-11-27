@@ -13,17 +13,16 @@ from app.models.databases.supabase.knowledge import CreateKnowledgeProperties
 from app.models.databases.supabase.notifications import \
     CreateNotificationProperties
 from app.models.notifications import NotificationsStatusEnum
-from app.models.user_identity import UserIdentity
 from app.models.user_usage import UserUsage
+from app.modules.user.entity.user_identity import UserIdentity
+from app.modules.user.repository.get_user_identity import get_user_identity
 from app.repository.brain.get_brain_details import get_brain_details
 from app.repository.files.upload_file import upload_file_storage
 from app.repository.knowledge.add_knowledge import add_knowledge
 from app.repository.notification.add_notification import add_notification
-from app.repository.user_identity.get_user_identity import get_user_identity
 from app.routes.authorizations.brain_authorization import \
     validate_brain_authorization
 from app.routes.authorizations.types import RoleEnum
-from app.utils.file import convert_bytes, get_file_size
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -48,18 +47,20 @@ async def upload_file(
     )
     userSettings = userDailyUsage.get_user_settings()
 
-    if request.headers.get("Openai-Api-Key"):
-        brain.max_brain_size = userSettings.get("max_brain_size", 1000000000)
+    # !TODO: will be used when we will have a quota system
 
-    remaining_free_space = userSettings.get("max_brain_size", 1000000000)
+    # if request.headers.get("Openai-Api-Key"):
+    #     brain.max_brain_size = userSettings.get("max_brain_size", 1000000000)
 
-    file_size = get_file_size(uploadFile)
-    if remaining_free_space - file_size < 0:
-        message = {
-            "message": f"❌ UserIdentity's brain will exceed maximum capacity with this upload. Maximum file allowed is : {convert_bytes(remaining_free_space)}",
-            "type": "error",
-        }
-        return message
+    # remaining_free_space = userSettings.get("max_brain_size", 1000000000)
+
+    # file_size = get_file_size(uploadFile)
+    # if remaining_free_space - file_size < 0:
+    #     message = {
+    #         "message": f"❌ UserIdentity's brain will exceed maximum capacity with this upload. Maximum file allowed is : {convert_bytes(remaining_free_space)}",
+    #         "type": "error",
+    #     }
+    #     return message
     upload_notification = None
     if chat_id:
         upload_notification = add_notification(

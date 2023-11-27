@@ -62,6 +62,7 @@
     "infosbrains",
     "ipnyb",
     "ipynb",
+    "iterrows",
     "Knowledges",
     "langchain",
     "llmchoice",
@@ -81,7 +82,8 @@
     "togggle",
     "tqdm",
     "vectorstore",
-    "webserver"
+    "webserver",
+    "zalo"
   ],
   "python.analysis.extraPaths": [
   ],
