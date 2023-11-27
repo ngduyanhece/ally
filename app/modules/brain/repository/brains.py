@@ -79,9 +79,9 @@ class Brains(BrainsInterface):
 				"name": brain.name,
 				"description": brain.description,
 				"status": brain.status,
-				"prompt_id": str(brain.prompt_id),
-				"runtime_id": brain.runtime_id if brain.runtime_id else None,
-				"teacher_runtime_id": brain.teacher_runtime_id if brain.teacher_runtime_id else None,
+				"prompt_id": str(brain.prompt_id) if brain.prompt_id else None,
+				"runtime_id": str(brain.runtime_id) if brain.runtime_id else None,
+				"teacher_runtime_id": str(brain.teacher_runtime_id) if brain.teacher_runtime_id else None,
 			}).execute()
 		).data[0]
 		return FullBrainEntity(**response)

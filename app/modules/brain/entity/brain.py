@@ -47,8 +47,8 @@ class CreateFullBrainProperties(BaseModel):
 	description: Optional[str] = "This is a description"
 	status: Optional[str] = "private"
 	prompt_id: Optional[UUID] = None
-	runtime_id: Optional[str] = None
-	teacher_runtime_id: Optional[str] = None
+	runtime_id: Optional[UUID] = None
+	teacher_runtime_id: Optional[UUID] = None
 
 
 class FullBrainEntity(BaseModel):
@@ -76,8 +76,8 @@ class BrainEntity(BaseModel):
 	description: Optional[str]
 	status: Optional[str]
 	prompt_id: Optional[UUID] = None
-	runtime_id: Optional[str] = None
-	teacher_runtime_id: Optional[str] = None
+	runtime_id: Optional[UUID] = None
+	teacher_runtime_id: Optional[UUID] = None
 	last_update: str
 
 class UpdateBrainProperties(BaseModel):
