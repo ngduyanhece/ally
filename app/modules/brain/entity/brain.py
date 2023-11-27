@@ -56,18 +56,18 @@ class FullBrainEntity(BaseModel):
 	name: str
 	description: Optional[str]
 	status: Optional[str]
-	prompt_id: Optional[UUID] = None
-	runtime: Optional[RuntimeEntity] = None
-	teacher_runtime: Optional[RuntimeEntity] = None
+	prompt_id: Optional[UUID]
+	runtime: Optional[RuntimeEntity]
+	teacher_runtime: Optional[RuntimeEntity]
 	last_update: str
 
 class FullBrainEntityWithRights(FullBrainEntity):
-	rights: Optional[RoleEnum] = None
+	rights: Optional[RoleEnum]
 
 class MinimalBrainEntity(BaseModel):
 	id: UUID
 	name: str
-	rights: Optional[RoleEnum] = None
+	rights: Optional[RoleEnum]
 	status: Optional[str]
 
 class BrainEntity(BaseModel):
@@ -75,9 +75,9 @@ class BrainEntity(BaseModel):
 	name: str
 	description: Optional[str]
 	status: Optional[str]
-	prompt_id: Optional[UUID] = None
-	runtime_id: Optional[UUID] = None
-	teacher_runtime_id: Optional[UUID] = None
+	prompt_id: Optional[UUID]
+	runtime_id: Optional[UUID]
+	teacher_runtime_id: Optional[UUID]
 	last_update: str
 
 class UpdateBrainProperties(BaseModel):
