@@ -3,7 +3,6 @@ from uuid import UUID
 from app.modules.brain.entity.brain import (BrainEntity,
                                             CreateFullBrainProperties,
                                             CreateRuntimeProperties,
-                                            FullBrainEntity,
                                             FullBrainEntityWithRights,
                                             MinimalBrainEntity, RuntimeEntity,
                                             RuntimeType, UpdateBrainProperties)
@@ -73,7 +72,7 @@ class Brains(BrainsInterface):
 			raise ValueError("Runtime not found")
 		return RuntimeEntity(**response[0])
 	
-	def create_brain(self, brain: CreateFullBrainProperties) -> FullBrainEntity:
+	def create_brain(self, brain: CreateFullBrainProperties) -> BrainEntity:
 		response = (
 			self.db.table("brains").insert({
 				"name": brain.name,
@@ -84,7 +83,7 @@ class Brains(BrainsInterface):
 				"teacher_runtime_id": str(brain.teacher_runtime_id) if brain.teacher_runtime_id else None,
 			}).execute()
 		).data[0]
-		return FullBrainEntity(**response)
+		return BrainEntity(**response)
 	
 	def get_user_brains(self, user_id) -> list[FullBrainEntityWithRights]:
 		response = (
@@ -107,6 +106,7 @@ class Brains(BrainsInterface):
 					runtime=runtime,
 					teacher_runtime=teacher_runtime,
 					last_update=item["brains"]["last_update"],
+					rights=item["rights"],
 				)
 			)
 			user_brains[-1].rights = item["rights"]
@@ -201,7 +201,7 @@ class Brains(BrainsInterface):
 				"name": brain.name,
 				"description": brain.description,
 				"status": brain.status,
-				"prompt_id": str(brain.prompt_id),
+				"prompt_id": str(brain.prompt_id) if brain.prompt_id else None,
 			})
 			.match({"id": brain_id})
 			.execute()

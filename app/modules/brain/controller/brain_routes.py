@@ -264,7 +264,7 @@ async def update_brain_endpoint(
 )
 async def delete_brain_endpoint(
 	brain_id: UUID,
-) -> BrainEntity | None:
+):
 	"""
 	Delete an existing brain by brain ID
 	Raise a 404 error if the brain ID is not found.
@@ -279,4 +279,4 @@ async def delete_brain_endpoint(
 
 	brain_Service.delete_brain_by_id(brain_id)
 
-	return existing_brain
+	return {"message": f"Brain {brain_id} has been deleted."}

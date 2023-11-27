@@ -5,10 +5,9 @@ from app.models.settings import get_supabase_client
 from app.modules.brain.entity.brain import (BrainEntity,
                                             CreateFullBrainProperties,
                                             CreateRuntimeProperties,
-                                            FullBrainEntity,
                                             FullBrainEntityWithRights,
                                             MinimalBrainEntity, RoleEnum,
-                                            RuntimeEntity,
+                                            RuntimeEntity, RuntimeType,
                                             UpdateBrainProperties)
 from app.modules.brain.repository.brains import Brains
 
@@ -28,7 +27,7 @@ class BrainService:
 			self, runtime: CreateRuntimeProperties, user_id: UUID) -> RuntimeEntity:
 		return self.repository.create_runtime(runtime, user_id)
 	
-	def create_brain(self, brain: CreateFullBrainProperties) -> FullBrainEntity:
+	def create_brain(self, brain: CreateFullBrainProperties) -> BrainEntity:
 		return self.repository.create_brain(brain)
 	
 	def get_user_default_brain(self, user_id: UUID) -> FullBrainEntityWithRights | None:
@@ -55,17 +54,47 @@ class BrainService:
 		default_brain = self.get_user_default_brain(user_id)
 
 		if not default_brain:
-			brain = self.create_brain(CreateFullBrainProperties())
-			response = self.create_brain_user(
-				user_id, default_brain.brain_id, RoleEnum.Owner, True)
+			runtime = self.repository.create_runtime(
+				runtime=CreateRuntimeProperties(
+					type=RuntimeType.OpenAi,
+					name="Default Runtime",
+					model="gpt-3.5-turbo",
+					max_tokens=256,
+					temperature=0.9,
+					openai_api_key="place your openai api key here",
+				),
+				user_id=user_id,
+			)
+			teacher_runtime = self.repository.create_runtime(
+				runtime=CreateRuntimeProperties(
+					type=RuntimeType.OpenAi,
+					name="Default Runtime",
+					model="gpt-3.5-turbo",
+					max_tokens=256,
+					temperature=0.9,
+					openai_api_key="place your openai api key here",
+				),
+				user_id=user_id,
+			)
+			brain_with_runtime = CreateFullBrainProperties(
+				name='Default Brain',
+				description='Default Brain Description',
+				status='private',
+				prompt_id=None,
+				runtime_id=runtime.id,
+				teacher_runtime_id=teacher_runtime.id,
+			)
+			brain = self.create_brain(brain_with_runtime)
+			brain_user = self.create_brain_user(
+				user_id, brain.id, RoleEnum.Owner, True)
 			default_brain = FullBrainEntityWithRights(
 				id=brain.id,
 				name=brain.name,
 				description=brain.description,
 				status=brain.status,
 				prompt_id=brain.prompt_id,
-				runtime=brain.runtime,
-				teacher_runtime=brain.teacher_runtime,
+				runtime=runtime,
+				teacher_runtime=teacher_runtime,
 				last_update=brain.last_update,
 				rights=RoleEnum.Owner,
 			)
@@ -82,7 +111,7 @@ class BrainService:
 	def update_brain_by_id(self, brain_id: UUID, brain: UpdateBrainProperties):
 		return self.repository.update_brain_by_id(brain_id, brain)
 	
-	def delete_brain_by_id(self, brain_id: UUID) -> BrainEntity:
+	def delete_brain_by_id(self, brain_id: UUID):
 			return self.repository.delete_brain_by_id(brain_id)
 	
 	def update_runtime_by_id(
