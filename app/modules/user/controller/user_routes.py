@@ -18,4 +18,8 @@ def sign_in_route(
 	"""
 	Sign in a user, just use for the backend development purpose.
 	"""
-	return user_service.sign_in_user(sign_in_data)
+	try:
+		return user_service.sign_in_user(sign_in_data)
+	except Exception as e:
+		logger.error(f"Error signing in user: {e}")
+		return {"error": "Error signing in user."}
