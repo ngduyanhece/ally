@@ -1,17 +1,18 @@
 # Using a slim version for a smaller base image
-FROM python:3.11-slim-bullseye
+FROM python:3.11.6-slim-bullseye
 
 # Install GEOS library, Rust, and other dependencies, then clean up
-RUN apt-get update && apt-get install -y \
+RUN apt-get clean && apt-get update && apt-get install -y \
     libgeos-dev \
     libcurl4-openssl-dev \
     libssl-dev \
-    pandoc \
     binutils \
+    pandoc \
     curl \
     git \
+    poppler-utils \
+    tesseract-ocr \
     build-essential && \
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
     rm -rf /var/lib/apt/lists/* && apt-get clean
 
 # Add Rust binaries to the PATH
@@ -25,15 +26,11 @@ COPY ./requirements.txt .
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# install psycopg2 dependencies
-RUN apt-get update \
-    && apt-get -y install libpq-dev gcc \
-    && pip install psycopg2
-
 # Increase timeout to wait for the new installation
 RUN pip install --no-cache-dir -r requirements.txt --timeout 200
 
 # Copy the rest of the application
 COPY . .
 RUN ./setup.sh
-CMD ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "5050"]
+EXPOSE 5050
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5050", "--workers", "6"]
