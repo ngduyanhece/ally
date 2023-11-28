@@ -48,6 +48,7 @@
   "cSpell.words": [
     "acall",
     "aiter",
+    "asyncpg",
     "bertscore",
     "CELEBRY",
     "COREAPPSETTING",
@@ -79,6 +80,7 @@
     "skillset",
     "supabase",
     "testrun",
+    "tiktoken",
     "togggle",
     "tqdm",
     "vectorstore",

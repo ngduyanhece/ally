@@ -1,5 +1,5 @@
 from langchain.embeddings.openai import OpenAIEmbeddings
-from supabase.client import Client, create_client
+from supabase.client import Client, ClientOptions, create_client
 
 from app.core.settings import settings
 from app.models.databases.supabase.supabase import SupabaseDB
@@ -9,7 +9,11 @@ from app.vectorstore.supabase import CustomSupabaseVectorStore
 def get_supabase_client() -> Client:
     # TODO we should include the supabase_url and supabase_service_key in the brain setting
     supabase_client: Client = create_client(
-        settings.supabase_url, settings.supabase_service_key
+        settings.supabase_url, settings.supabase_service_key,
+        options=ClientOptions(
+            auto_refresh_token=True,
+            persist_session=True,
+        )
     )
     return supabase_client
 
