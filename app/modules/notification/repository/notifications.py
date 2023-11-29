@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -89,15 +88,15 @@ class Notifications(NotificationsInterface):
 		Returns:
 			list[Notification]: The notifications
 		"""
-		five_minutes_ago = (datetime.now() - timedelta(minutes=5)).strftime(
-			"%Y-%m-%d %H:%M:%S.%f"
-		)
+		# two_minutes_ago = (datetime.now() - timedelta(minutes=2)).strftime(
+		# 	"%Y-%m-%d %H:%M:%S.%f"
+		# )
 
 		notifications = (
 			self.db.from_("notifications")
 			.select("*")
 			.filter("chat_id", "eq", chat_id)
-			.filter("datetime", "gt", five_minutes_ago)
+			# .filter("datetime", "gt", two_minutes_ago)
 			.execute()
 		).data
 

@@ -1,11 +1,12 @@
 from pathlib import Path
-from fastapi import UploadFile
 
 import modal
 
-from app.models.settings import get_supabase_client
+from app.modules.file.service.file_service import FileService
 
 ally_dir = Path(__file__).parent.parent.parent
+
+file_service = FileService()
 
 image = modal.Image.debian_slim(
 		python_version="3.10"
@@ -21,8 +22,16 @@ image = modal.Image.debian_slim(
 	"PyMuPDF==1.23.4",
 	"tiktoken==0.5.1",
 	"tqdm==4.66.1",
-	"pandas==2.1.2"
-)
+	"pandas==2.1.2",
+	"unstructured==0.11.0",
+	"pdf2image==1.16.3",
+	"pypdf==3.17.1",
+	"opencv-python==4.8.1.78",
+	"pdfminer.six==20221105",
+	"unstructured_pytesseract==0.3.12",
+	"unstructured_inference==0.7.16",
+	"python-pptx==0.6.23"
+).run_commands("apt-get update && apt-get install ffmpeg libsm6 libxext6  -y")
 
 stub = modal.Stub(
 	name="file-process-and-notify",
@@ -37,69 +46,15 @@ stub = modal.Stub(
 	retries=3,
 	container_idle_timeout=50
 )
-def process_file_and_notify(
-	file_name: str,
-	file_original_name: str,
+async def file_process_and_notify(
+	file_name,
+	file_original_name,
 	brain_id,
-	notification_id=None,
+	notification_id,
 ):
-	try:
-		supabase_client = get_supabase_client()
-		tmp_file_name = "tmp-file-" + file_name
-		tmp_file_name = tmp_file_name.replace("/", "_")
-
-		with open(tmp_file_name, "wb+") as f:
-			res = supabase_client.storage.from_("ally").download(file_name)
-			f.write(res)
-			f.seek(0)
-			file_content = f.read()
-
-			upload_file = UploadFile(
-						file=f, filename=file_name.split("/")[-1], size=len(file_content)
-				)
-
-				file_instance = File(file=upload_file)
-				loop = asyncio.get_event_loop()
-				message = loop.run_until_complete(
-						filter_file(
-								file=file_instance,
-								brain_id=brain_id,
-								original_file_name=file_original_name,
-						)
-				)
-
-				f.close()
-				os.remove(tmp_file_name)
-
-				if notification_id:
-						notification_message = {
-								"status": message["type"],
-								"message": message["message"],
-								"name": file_instance.file.filename if file_instance.file else "",
-						}
-						update_notification_by_id(
-								notification_id,
-								NotificationUpdatableProperties(
-										status=NotificationsStatusEnum.Done,
-										message=str(notification_message),
-								),
-						)
-				update_brain_last_update_time(brain_id)
-
-				return True
-	except Exception as e:
-				notification_message = {
-						"status": "error",
-						"message": "There was an error uploading the file. Please check the file and try again. If the issue persist, please open an issue on Github",
-						"name": file_instance.file.filename if file_instance.file else "",
-				}
-				update_notification_by_id(
-						notification_id,
-						NotificationUpdatableProperties(
-								status=NotificationsStatusEnum.Done,
-								message=str(notification_message),
-						),
-						)
-				raise e  
-	
-	
+	await file_service.process_file_and_notify(
+		file_name=file_name,
+		file_original_name=file_original_name,
+		brain_id=brain_id,
+		notification_id=notification_id if notification_id else None,
+	)

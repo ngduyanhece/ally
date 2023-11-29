@@ -274,7 +274,7 @@ class Brains(BrainsInterface):
 		return results.data
 	
 	def delete_brain_by_id(self, brain_id: UUID):
-		brain_user_results = (
+		_ = (
 			self.db.table("brains_users")
 			.delete()
 			.match({"brain_id": str(brain_id)})
@@ -288,13 +288,13 @@ class Brains(BrainsInterface):
 		)
 		runtime_id = brain_results.data[0]["runtime_id"]
 		teacher_runtime_id = brain_results.data[0]["teacher_runtime_id"]
-		runtime_results = (
+		_ = (
 			self.db.table("runtimes")
 			.delete()
 			.match({"id": str(runtime_id)})
 			.execute()
 		)
-		teacher_runtime_results = (
+		_ = (
 			self.db.table("runtimes")
 			.delete()
 			.match({"id": str(teacher_runtime_id)})
@@ -308,9 +308,28 @@ class Brains(BrainsInterface):
 
 		if old_default_brain is not None:
 			self.db.table("brains_users").update({"default_brain": False}).match(
-						{"brain_id": old_default_brain, "user_id": user_id}
-				).execute()
+				{"brain_id": old_default_brain, "user_id": user_id}
+			).execute()
 
 		self.db.table("brains_users").update({"default_brain": True}).match(
-				{"brain_id": brain_id, "user_id": user_id}
+			{"brain_id": brain_id, "user_id": user_id}
 		).execute()
+	
+	def update_brain_last_update_time(self, brain_id: UUID) -> None:
+		self.db.table("brains").update({"last_update": "now()"}).match(
+			{"id": brain_id}
+		).execute()
+	
+	def create_brain_vector(self, brain_id, vector_id, file_sha1):
+		response = (
+			self.db.table("brains_vectors")
+			.insert(
+				{
+					"brain_id": str(brain_id),
+					"vector_id": str(vector_id),
+					"file_sha1": file_sha1,
+				}
+			)
+			.execute()
+		)
+		return response.data
