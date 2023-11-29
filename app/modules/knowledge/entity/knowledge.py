@@ -19,7 +19,7 @@ class DeleteKnowledgeResponse(BaseModel):
 	status: str = "delete"
 	knowledge_id: UUID
 
-class Knowledge(BaseModel):
+class KnowledgeEntity(BaseModel):
 	id: UUID
 	brain_id: UUID
 	file_name: Optional[str] = None

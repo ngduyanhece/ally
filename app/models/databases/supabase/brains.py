@@ -129,10 +129,6 @@ class Brain(Repository):
 			public_brains.append(brain)
 		return public_brains
 
-	def update_brain_last_update_time(self, brain_id: UUID) -> None:
-		self.db.table("brains").update({"last_update": "now()"}).match(
-			{"brain_id": brain_id}
-		).execute()
 
 	def get_brain_for_user(self, user_id, brain_id) -> MinimalBrainEntity | None:
 		response = (
@@ -228,20 +224,6 @@ class Brain(Repository):
 		)
 
 		return response
-
-	def create_brain_vector(self, brain_id, vector_id, file_sha1):
-		response = (
-			self.db.table("brains_vectors")
-			.insert(
-				{
-					"brain_id": str(brain_id),
-					"vector_id": str(vector_id),
-					"file_sha1": file_sha1,
-				}
-			)
-			.execute()
-		)
-		return response.data
 
 	def get_vector_ids_from_file_sha1(self, file_sha1: str):
 		# move to vectors class

@@ -120,6 +120,9 @@ class BrainService:
 	
 	def set_as_default_brain_for_user(self, user_id: UUID, brain_id: UUID):
 		return self.repository.set_as_default_brain_for_user(user_id, brain_id)
-		
-
 	
+	def update_brain_last_update_time(self, brain_id: UUID):
+		return self.repository.update_brain_last_update_time(brain_id)
+	
+	def create_brain_vector(self, brain_id, vector_id, file_sha1):
+		return self.repository.create_brain_vector(brain_id, vector_id, file_sha1)		
