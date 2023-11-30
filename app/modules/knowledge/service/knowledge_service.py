@@ -22,3 +22,15 @@ class KnowledgeService:
 
 	def get_all_knowledge_in_brain(self, brain_id: UUID) -> list[KnowledgeEntity]:
 		return self.repository.get_all_knowledge_in_brain(brain_id)
+	
+	def get_knowledge(self, knowledge_id: UUID) -> KnowledgeEntity:
+		knowledge = self.repository.get_knowledge_by_id(knowledge_id)
+		return knowledge
+	
+	def remove_knowledge(self, knowledge_id: UUID):
+		message = self.repository.remove_knowledge_by_id(knowledge_id)
+
+		logger.info(f"Knowledge { knowledge_id} removed successfully from table")
+
+		return message
+	

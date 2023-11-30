@@ -125,4 +125,7 @@ class BrainService:
 		return self.repository.update_brain_last_update_time(brain_id)
 	
 	def create_brain_vector(self, brain_id, vector_id, file_sha1):
-		return self.repository.create_brain_vector(brain_id, vector_id, file_sha1)		
+		return self.repository.create_brain_vector(brain_id, vector_id, file_sha1)
+	
+	def delete_file_from_brain(self, brain_id, file_name: str):
+		return self.repository.delete_file_from_brain(brain_id, file_name)

@@ -304,3 +304,6 @@ class FileService:
 				),
 			)
 			raise e
+
+	def delete_file_from_storage(self, file_identifier: str):
+		return self.repository.delete_file_from_storage(file_identifier)

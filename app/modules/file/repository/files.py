@@ -110,3 +110,10 @@ class Files(FilesInterface):
 				.execute()
 		)
 		return response
+	
+	def delete_file_from_storage(self, file_identifier: str):
+		try:
+			response = self.db.storage.from_("ally").remove([file_identifier])
+			return response
+		except Exception as e:
+			raise e
