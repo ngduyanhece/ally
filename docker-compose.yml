@@ -11,9 +11,9 @@ services:
     restart: always
     volumes:
       - ./:/code/
-    depends_on:
-      - redis
-      - worker
+    # depends_on:
+    #   - redis
+    #   - worker
     ports:
       - 5050:5050
     
