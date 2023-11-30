@@ -333,3 +333,36 @@ class Brains(BrainsInterface):
 			.execute()
 		)
 		return response.data
+	
+	def delete_file_from_brain(self, brain_id, file_name: str):
+		# First, get the vector_ids associated with the file_name
+		file_vectors = (
+			self.db.table("vectors")
+			.select("id")
+			.filter("metadata->>file_name", "eq", file_name)
+			.execute()
+		)
+
+		file_vectors_ids = [item["id"] for item in file_vectors.data]
+
+		# remove current file vectors from brain vectors
+		self.db.table("brains_vectors").delete().in_("vector_id", file_vectors_ids).filter("brain_id", "eq", brain_id).execute()
+
+		vectors_used_by_another_brain = (
+			self.db.table("brains_vectors")
+			.select("vector_id")
+			.in_("vector_id", file_vectors_ids)
+			.filter("brain_id", "neq", brain_id)
+			.execute()
+		)
+		vectors_used_by_another_brain_ids = [
+			item["vector_id"] for item in vectors_used_by_another_brain.data
+		]
+
+		vectors_no_longer_used_ids = [
+			id for id in file_vectors_ids if id not in vectors_used_by_another_brain_ids
+		]
+
+		self.db.table("vectors").delete().in_("id", vectors_no_longer_used_ids).execute()
+
+		return {"message": f"File {file_name} in brain {brain_id} has been deleted."}
