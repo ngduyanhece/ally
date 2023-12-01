@@ -2,6 +2,7 @@ from typing import ClassVar, Dict, Optional
 from uuid import UUID
 
 import pandas as pd
+from langchain.schema import Document
 from pydantic import BaseModel
 from supabase.client import Client, create_client
 
@@ -20,16 +21,22 @@ from app.llm.utils.retrieval_input_template_from_a_prompt import (
 from app.modules.agent.entity.agent import BrainAgentInput
 from app.modules.brain.entity.brain import (FullBrainEntityWithRights,
                                             RuntimeType)
+from app.modules.brain.service.brain_service import BrainService
 from app.modules.chat.entity.chat import (CreateChatHistory,
                                           GetChatHistoryOutput)
 from app.modules.chat.service.chat_service import ChatService
+from app.modules.file.service.file_service import FileService
 from app.modules.prompt.entity.prompt import Prompt
 from app.modules.prompt.service.prompt_service import PromptService
+from app.modules.test_data.service.test_data_service import TestDataService
+from app.packages.files.file import compute_sha1_from_string
 from app.vectorstore.supabase import CustomSupabaseVectorStore
 
 prompt_service = PromptService()
 chat_service = ChatService()
-
+brain_service = BrainService()
+file_service = FileService()
+test_data_service = TestDataService()
 
 class BrainAgent(BaseModel):
 	"""
@@ -150,22 +157,21 @@ class BrainAgent(BaseModel):
 			matching_threshold=matching_threshold
 		)
 	
-	# def _add_experience_to_agent(
-	# 	self, vector_store: AllyVectorStore, experience: str):
-	# 	file_sha1 = compute_sha1_from_string(experience)
-	# 	experience_doc = Document(
-	# 		page_content=experience,
-	# 		metadata={
-	# 			"brain_name": self.brain_details.name,
-	# 			"file_sha1": file_sha1,
-	# 		}
-	# 	)
-	# 	created_vector = vector_store.update(experience_doc)
-	# 	created_vector_id = created_vector[0]
-	# 	brain = Brain(id=self.brain_details.brain_id)
-	# 	brain.create_brain_vector(created_vector_id, file_sha1)
-	# 	database = get_supabase_db()
-	# 	database.set_file_sha_from_metadata(file_sha1)
+	def _add_experience_to_agent(
+		self, vector_store: AllyVectorStore, experience: str):
+		file_sha1 = compute_sha1_from_string(experience)
+		experience_doc = Document(
+			page_content=experience,
+			metadata={
+				"brain_name": self.brain_details.name,
+				"file_sha1": file_sha1,
+			}
+		)
+		created_vector = vector_store.update(experience_doc)
+		created_vector_id = created_vector[0]
+		brain_service.create_brain_vector(
+			self.brain_details.brain_id, created_vector_id, file_sha1)
+		file_service.set_file_sha_from_metadata(file_sha1)
 		
 	def __init__(self, brain_details: FullBrainEntityWithRights, **data):
 		super().__init__(
@@ -227,66 +233,69 @@ class BrainAgent(BaseModel):
 			}
 		)
 	
-	# def learn(
-	# 	self,
-	# 	chat_id: UUID,
-	# 	testcase_data_id: UUID,
-	# 	update_memory: bool = False
-	# ) -> GetChatHistoryOutput:
-	# 	"""Learn and improve the brain skill
-	# 	from the dataset as the environment
-	# 	"""
-	# 	raw_dataset = get_testcase_data_by_id(testcase_data_id)
-	# 	df_dataset = pd.DataFrame([dict(raw_dataset)])
-	# 	self.output_analyzer_skill = self._create_output_analyzer_skill(self.prompt.output_template)
-		
-	# 	agent = Agent(
-	# 		skills=LinearSkillSet(
-	# 			skills=[self.brain_skill],
-	# 			skill_sequence=[self.brain_skill.name]
-	# 		),
-	# 		runtimes={
-	# 			self.runtime_name: self.runtime,
-	# 		}
-	# 	)
-	# 	agent.environment = self._create_environment(df_dataset)
-	# 	self.teacher_runtime, self.teacher_runtime_name = self._create_runtime(runtime_type='teacher')
-	# 	agent.teacher_runtimes = {
-	# 		self.teacher_runtime_name: self.teacher_runtime
-	# 	}
-	# 	suggested_prompt, experience = agent.learn(
-	# 		learning_iterations=1,
-	# 		accuracy_threshold=0.9,
-	# 		batch_size=1,
-	# 		update_memory=update_memory,
-	# 		runtime=self.runtime_name,
-	# 		teacher_runtime=self.teacher_runtime_name
-	# 	)
-		
-	# 	if update_memory and experience != "":
-	# 		self._add_experience_to_agent(self.vector_store, experience)
+	def learn(
+		self,
+		chat_id: UUID,
+		testcase_data_id: UUID,
+		update_memory: bool = False
+	) -> GetChatHistoryOutput:
+		"""Learn and improve the brain skill
+		from the dataset as the environment
+		"""
+		raw_dataset = test_data_service.get_testcase_data_by_id(testcase_data_id)
+		df_dataset = pd.DataFrame([dict(raw_dataset)])
 
-	# 	new_chat = update_chat_history(
-	# 		CreateChatHistory(
-	# 			**{
-	# 					"chat_id": chat_id,
-	# 					"user_message": raw_dataset.text_input,
-	# 					"assistant": "BETTER PROMPT: " + suggested_prompt + "\n REASONING: " + experience,
-	# 					"brain_id": self.brain_details.brain_id,
-	# 					"prompt_id": self.brain_details.prompt_id,
-	# 			}
-	# 		)
-	# 	)
-	# 	return GetChatHistoryOutput(
-	# 		**{
-	# 			"chat_id": chat_id,
-	# 			"user_message": raw_dataset.text_input,
-	# 			"assistant": "BETTER PROMPT: " + suggested_prompt + "\n REASONING: " + experience,
-	# 			"message_time": new_chat.message_time,
-	# 			"brain_id": str(self.brain_details.brain_id),
-	# 			"prompt_id": str(self.brain_details.prompt_id),
-	# 			"message_id": new_chat.message_id
-	# 		}
-	# 	)
+		agent = Agent(
+			skills=LinearSkillSet(
+				skills=[self.brain_skill],
+				skill_sequence=[self.brain_skill.name]
+			),
+			runtimes={
+				self.runtime_name: self.runtime,
+			}
+		)
+		agent.environment = self._create_environment(df_dataset)
+		self.teacher_runtime, self.teacher_runtime_name = self._create_runtime(
+			runtime_type='teacher')
+		agent.teacher_runtimes = {
+			self.teacher_runtime_name: self.teacher_runtime
+		}
+		agent.learn(
+			learning_iterations=1,
+			accuracy_threshold=0.9,
+			batch_size=1,
+			update_memory=update_memory,
+			runtime=self.runtime_name,
+			teacher_runtime=self.teacher_runtime_name
+		)
+		
+		if update_memory:
+			self._add_experience_to_agent(
+				self.vector_store, self.brain_skill.reasoning)
+			self._add_experience_to_agent(
+				self.vector_store, self.brain_skill.fail_knowledge)
+
+		new_chat = chat_service.update_chat_history(
+			CreateChatHistory(
+				**{
+						"id": chat_id,
+						"user_message": raw_dataset.text_input,
+						"assistant": "BETTER PROMPT: " + self.brain_skill.instruction_template + "\n REASONING: " + self.brain_skill.reasoning + "\n KNOWLEDGE TO PROVIDED: " + self.brain_skill.fail_knowledge,
+						"brain_id": self.brain_details.id,
+						"prompt_id": self.brain_details.prompt_id,
+				}
+			)
+		)
+		return GetChatHistoryOutput(
+			**{
+				"chat_id": chat_id,
+				"user_message": raw_dataset.text_input,
+				"assistant": "BETTER PROMPT: " + self.brain_skill.instruction_template + "\n REASONING: " + self.brain_skill.reasoning + "\n KNOWLEDGE TO PROVIDED: " + self.brain_skill.fail_knowledge,
+				"message_time": new_chat.message_time,
+				"brain_id": str(self.brain_details.id),
+				"prompt_id": str(self.brain_details.prompt_id),
+				"message_id": new_chat.message_id
+			}
+		)
 	
 		

@@ -254,14 +254,14 @@ class Agent(BaseModel, ABC):
 					f"Accuracy = {accuracy[skill_output] * 100:0.2f}%",
 					style="bold red",
 				)
-				old_instructions = skill.instructions
+				old_instructions = skill.instruction_template
 				skill.improve(
 					predictions, skill_output, feedback, runtime=teacher_runtime
 				)
 				if is_running_in_jupyter():
-					highlight_differences(old_instructions, skill.instructions)
+					highlight_differences(old_instructions, skill.instruction_template)
 				else:
-					print_text(skill.instructions, style="bold green")
+					print_text(skill.instruction_template, style="bold green")
 
 				if skill_name == first_skill_with_errors:
 						break
