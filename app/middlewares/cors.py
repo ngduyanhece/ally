@@ -5,6 +5,7 @@ origins = [
 	"http://localhost:3000",
 	"http://localhost:3001",
 	"http://52.74.55.75:3000/"
+	"https://52.74.55.75:3000/"
 	"*",
 ]
 
