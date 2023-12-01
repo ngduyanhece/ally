@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
+from modal import Function
 from modal.functions import FunctionCall
 
-from app.llm.brain_agent import BrainAgent
 from app.middlewares.auth.auth_bearer import AuthBearer, get_current_user
 from app.middlewares.auth.brain_authorization import \
     validate_brain_authorization
@@ -43,17 +43,12 @@ async def create_brain_input_handler(
 		required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
 	)
 	brain_details = brain_service.get_brain_details(brain_id)
-	# single_agent_chat = Function.lookup("single-agent-chat", "single_agent_chat")
-	# try:
-	# 	call = single_agent_chat.spawn(chat_id, brain_detail, input)
-	# 	return {"call_id": call.object_id}
-	# except HTTPException as e:
-	# 	raise e
-	brain_agent = BrainAgent(
-		brain_details=brain_details
-	)
-	answer = brain_agent.generate_answer(chat_id=chat_id, input=input)
-	return answer
+	single_agent_chat = Function.lookup("single-agent-chat", "single_agent_chat")
+	try:
+		call = single_agent_chat.spawn(chat_id, brain_details, input)
+		return {"call_id": call.object_id}
+	except HTTPException as e:
+		raise e
 
 @agent_router.post(
 	"/agent/learn/{chat_id}",
@@ -72,21 +67,16 @@ async def run_brain_learning_process(
 		required_roles=[RoleEnum.Viewer, RoleEnum.Editor, RoleEnum.Owner],
 	)
 	brain_details = brain_service.get_brain_details(brain_id)
-	# single_agent_learn = Function.lookup(
-	# 	"single-agent-learn", "single_agent_learn")
-	# try:
-	# 	call = single_agent_learn.spawn(chat_id, testcase_data_id, brain_details)
-	# 	return {"call_id": call.object_id}
-	# except HTTPException as e:
-	# 	raise e
-	brain_agent = BrainAgent(
-		brain_details=brain_details
-	)
 	test_data = test_data_service.create_testcase_data_from_message(
 		message_id, str(message_id))
-	answer = brain_agent.learn(
-		chat_id=chat_id, testcase_data_id=test_data.testcase_data_id)
-	return answer
+	single_agent_learn = Function.lookup(
+		"single-agent-learn", "single_agent_learn")
+	try:
+		call = single_agent_learn.spawn(
+			chat_id, test_data.testcase_data_id, brain_details)
+		return {"call_id": call.object_id}
+	except HTTPException as e:
+		raise e
 	
 @agent_router.get(
 	"/modal/{call_id}",

@@ -5,10 +5,11 @@ import modal
 
 from ally.utils.logs import print_text
 from app.llm.brain_agent import BrainAgent
-from app.models.brain_entity import BrainEntity
-from app.repository.brain.get_brain_by_id import get_brain_by_id
+from app.modules.brain.entity.brain import FullBrainEntityWithRights
+from app.modules.brain.service.brain_service import BrainService
 
 ally_dir = Path(__file__).parent.parent.parent
+brain_service = BrainService()
 
 image = modal.Image.debian_slim(
 		python_version="3.10"
@@ -43,7 +44,7 @@ stub = modal.Stub(
 def single_agent_learn(
 	chat_id: UUID,
 	testcase_data_id: UUID,
-	brain_details: BrainEntity,
+	brain_details: FullBrainEntityWithRights,
 ):
 	brain_agent = BrainAgent(
 		brain_details=brain_details
@@ -59,7 +60,7 @@ def main():
 	chat_id = "f16fd0b5-3e26-4f9e-8dcc-871832a436cc"
 	testcase_data_id = "142ea65e-8808-4253-b5b9-7c6459b187c6"
 	brain_id = "3e467f36-84fb-4257-837e-74da7def149a"
-	brain_details = get_brain_by_id(brain_id)
+	brain_details = brain_service.get_brain_details(brain_id)
 	answer = single_agent_learn.remote(
 		chat_id=chat_id,
 		testcase_data_id=testcase_data_id,
