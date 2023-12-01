@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from ally.runtimes.base import Runtime
 from ally.utils.internal_data import InternalDataFrame, InternalSeries
-from ally.utils.logs import print_dataframe
+from ally.utils.logs import print_dataframe, print_text
 from ally.vector_store.base import AllyVectorStore
 
 
@@ -66,6 +66,19 @@ class Skill(BaseModel, ABC):
 		description="Flag indicating if the skill is frozen.",
 		examples=[True, False],
 	)
+	reasoning: str = Field(
+		title='reasoning',
+		description='the reasoning for the skill after improvement',
+		default="",
+		examples="example reasoning"
+	)
+	fail_knowledge: str = Field(
+		title='fail_knowledge',
+		description='the knowledge for the skill to be provided after failure',
+		default="",
+		examples="example fail_knowledge"
+	)
+
 
 	def get_output_fields(self):
 		"""
@@ -160,9 +173,7 @@ class TransformSkill(Skill):
 		"""
 		# full template
 		full_template = f"""
-		{{prompt}}
-		{self.input_template}
-		{output_template_str}"""
+		{{prompt}}"""
 
 		message = f"""
 			A prompt is a text paragraph that outlines the expected actions and instructs the large language model (LLM) to \
@@ -173,9 +184,7 @@ class TransformSkill(Skill):
 			{full_template}
 			```
 			Here:
-			- "{self.input_template}" is input template,
-			- "{{prompt}}" is the LLM prompt,
-			- "{output_template_str}" is the output template.
+			- "{{prompt}}" is the LLM prompt
 
 			Model can produce erroneous output if a prompt is not well defined. \
 			In our collaboration, we’ll work together to refine a prompt. The process consists of two main steps:
@@ -200,14 +209,10 @@ class TransformSkill(Skill):
 			instruction_template=teacher_instruction_template,
 			input_template="{input}",
 			output_template=[{
-				"name": "reasoning",
-				"description": "reasoning from the assistant"
+				"name": "output",
+				"description": "output from the teacher"
 			}]
-		)['reasoning']
-
-		teacher_instruction_template = f"""
-		{reasoning}
-		"""
+		)['output']
 
 		message = f"""
 			Now please carefully review your reasoning in Step 1 and help with Step 2: refining the prompt.
@@ -223,18 +228,40 @@ class TransformSkill(Skill):
 					- Current prompt: "The model should generate a summary of the input text."
 					- New prompt: "The model should generate a summary of the input text. Pay attention to the original style."
 
-			3. Reply only with the new prompt. Do not include input and output templates in the prompt."""
+			3. Reply only with the new prompt. Do not include input and output templates in the prompt. remove any special characters from the prompt."""
+
 		new_prompt = runtime.record_to_record(
 			record={'input': message},
-			instruction_template=teacher_instruction_template,
+			instruction_template=reasoning,
 			input_template="{input}",
 			output_template=[{
 				"name": "output",
 				"description": "new prompt"
 			}]
 		)['output']
+
+		message = f"""
+			Now please carefully review your reasoning in Step 1 and help with Step 2: provide the knowledge that model should be provided
+			## Follow this guidance 
+			1. reply with the suggestion for the knowledge that model should be provided to improve the performance
+			2. if you can provide the knowledge, please reply with the knowledge in the concise format"""
+		
+		fail_knowledge = runtime.record_to_record(
+			record={'input': message},
+			instruction_template=reasoning,
+			input_template="{input}",
+			output_template=[{
+				"name": "output",
+				"description": "knowledge to learn"
+			}]
+		)['output']
+
 		self.instruction_template = new_prompt
-		return new_prompt, reasoning
+		self.reasoning = reasoning
+		self.fail_knowledge = fail_knowledge
+		print_text(f"New prompt: {self.instruction_template}")
+		print_text(f"New reasoning: {self.reasoning}")
+		print_text(f"New fail_knowledge: {self.fail_knowledge}")
 
 class SynthesisSkill(Skill):
 	"""
@@ -311,7 +338,7 @@ class AnalysisSkill(Skill):
 		"""
 		raise NotImplementedError
 
-class RetrievalSkill(Skill):
+class RetrievalSkill(TransformSkill):
 	"""
 	retrieval skill that process the dataframe and retrieve data from external 
 	sources (e.g. for data retrieval purposes).
@@ -339,9 +366,3 @@ class RetrievalSkill(Skill):
 			output_template=self.output_template,
 			instruction_template=self.instruction_template,
 		)
-	
-	def improve(self, **kwargs):
-		"""
-		Improves the skill.
-		"""
-		raise NotImplementedError

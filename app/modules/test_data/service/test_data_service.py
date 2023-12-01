@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from app.models.settings import get_supabase_client
 from app.modules.chat.service.chat_service import ChatService
 from app.modules.test_data.entity.test_data import (MessageLabel,
@@ -60,3 +62,7 @@ class TestDataService:
 			context=message_with_label.feedback,
 		)
 		return TestCaseDataEntity(**response.data[0])
+	
+	def get_testcase_data_by_id(
+		self, testcase_data_id: UUID) -> TestCaseDataEntity:
+		return self.repository.get_testcase_data_by_id(testcase_data_id)

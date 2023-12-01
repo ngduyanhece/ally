@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional, Union
 
 import pandas as pd
 from pydantic import BaseModel
@@ -133,7 +133,7 @@ class StaticEnvironment(Environment):
 	"""    
 	df: InternalDataFrame = None
 	ground_truth_columns: Optional[Dict[str, str]] = None
-	matching_function: str = 'fuzzy'
+	matching_function: Union[str, Callable] = "fuzzy"
 	matching_threshold: float = 0.9
 
 	def get_feedback(
@@ -177,12 +177,21 @@ class StaticEnvironment(Environment):
 			gt = gt[nonnull_index]
 			pred = pred[nonnull_index]
 			# compare ground truth with predictions
-			if self.matching_function == 'exact':
-				gt_pred_match = gt == pred
-			elif self.matching_function == 'fuzzy':
-				gt_pred_match = fuzzy_match(gt, pred, threshold=self.matching_threshold)
-			else:
-				raise NotImplementedError(f'Unknown matching function {self.matching_function}')
+			if isinstance(self.matching_function, str):
+				if self.matching_function == "exact":
+					gt_pred_match = gt == pred
+				elif self.matching_function == "fuzzy":
+					gt_pred_match = fuzzy_match(
+						gt, pred, threshold=self.matching_threshold
+					)
+				else:
+					raise NotImplementedError(
+						f"Unknown matching function {self.matching_function}"
+					)
+			elif callable(self.matching_function):
+				gt_pred_match = gt.combine(
+					pred, lambda g, p: self.matching_function(g, p)
+				)
 			pred_match[pred_column] = gt_pred_match
 			# leave feedback about mismatches
 			match_concat = InternalDataFrameConcat([gt_pred_match.rename('match'), gt], axis=1)

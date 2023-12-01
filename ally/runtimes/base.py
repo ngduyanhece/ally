@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_text
+from ally.utils.retry_parser import RetryWithErrorOutputParser
 
 tqdm.pandas()
 	
@@ -90,11 +91,13 @@ class Runtime(BaseModel):
 			try:
 				verified_output = output_parser.parse(result)
 			except Exception as e:
-				verified_output = {'output': str(result)}
-				# retry_parser = RetryWithErrorOutputParser.from_llm(
-				# 	parser=output_parser, llm=self._llm, max_retries=1)
-				# verified_output = retry_parser.parse_with_chat_prompt_template(
-				# 	result, self._llm_prompt_template, verified_input)
+				try:
+					retry_parser = RetryWithErrorOutputParser.from_llm(
+						parser=output_parser, llm=self._llm, max_retries=1)
+					verified_output = retry_parser.parse_with_chat_prompt_template(
+						result, self._llm_prompt_template, verified_input)
+				except Exception as e:
+						verified_output = {'output': str(result)}
 		return verified_output
 	
 	def get_input_prompt(self, input_template: str) -> HumanMessagePromptTemplate:
