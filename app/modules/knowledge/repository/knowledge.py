@@ -67,6 +67,26 @@ class Knowledge(KnowledgeInterface):
 		).data
 
 		return KnowledgeEntity(**knowledge[0])
+	
+	def update_knowledge_property_by_id(
+			self, knowledge_id: UUID, property: dict) -> KnowledgeEntity:
+		"""
+		Update a knowledge property by its id
+		Args:
+			knowledge_id (UUID): The id of the knowledge
+			value: The value to update
+		"""
+		response = (
+			self.db.from_("knowledge")
+			.update(property)
+			.filter("id", "eq", str(knowledge_id))
+			.execute()
+		).data
+
+		if response == []:
+			raise HTTPException(404, "Knowledge not found")
+
+		return KnowledgeEntity(**response[0])
 
 	def get_all_knowledge_in_brain(self, brain_id: UUID) -> list[KnowledgeEntity]:
 		"""

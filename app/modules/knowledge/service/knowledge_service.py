@@ -34,3 +34,8 @@ class KnowledgeService:
 
 		return message
 	
+	def update_knowledge_property_by_id(
+			self, knowledge_id: UUID, property: dict) -> KnowledgeEntity:
+		return self.repository.update_knowledge_property_by_id(
+			knowledge_id, property)
+	

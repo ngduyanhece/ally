@@ -1,6 +1,6 @@
 
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
@@ -60,6 +60,12 @@ class Skill(BaseModel, ABC):
 		default=[{"name": "name", "description": "description"}],
 		examples=[{"name": "name", "description": "description"}],
 	)
+	frozen: bool = Field(
+		default=False,
+		title="Frozen",
+		description="Flag indicating if the skill is frozen.",
+		examples=[True, False],
+	)
 
 	def get_output_fields(self):
 		"""
@@ -69,6 +75,12 @@ class Skill(BaseModel, ABC):
 			List[str]: A list of output fields.
 		"""
 		return [field['name'] for field in self.output_template]
+	
+	@abstractmethod
+	def improve(self, predictions, train_skill_output, feedback, runtime):
+		"""
+		Base method for improving the skill.
+		"""
 
 class TransformSkill(Skill):
 	"""
@@ -97,6 +109,132 @@ class TransformSkill(Skill):
 			output_template=self.output_template,
 			instruction_template=self.instruction_template,
 		)
+	
+	def improve(
+		self,
+		predictions: InternalDataFrame,
+		train_skill_output: str,
+		feedback,
+		runtime: Runtime,
+	):
+		"""
+		Improves the skill.
+
+		Args:
+			predictions (InternalDataFrame): The predictions made by the skill.
+			train_skill_output (str): The name of the output field of the skill.
+			feedback (InternalDataFrame): The feedback provided by the user.
+			runtime (Runtime):
+
+		"""
+		output_template_str = " ".join([field['description'] + ": " "{" + field['name'] + "}" for field in self.output_template])
+		if (
+			feedback.match[train_skill_output].all()
+			and not feedback.match[train_skill_output].isna().all()
+		):
+			# nothing to improve
+			return
+
+		fb = feedback.feedback.rename(
+			columns=lambda x: x + "__fb" if x in predictions.columns else x
+		)
+		analyzed_df = fb.merge(predictions, left_index=True, right_index=True)
+
+		examples = []
+
+		for i, row in enumerate(analyzed_df.to_dict(orient="records")):
+			# if fb marked as NaN, skip
+			if not row[f"{train_skill_output}__fb"]:
+				continue
+			examples.append(
+				f"### Example #{i}\n\n"
+				f"{self.input_template.format(**row)}\n\n"
+				f"{output_template_str.format(**row)}\n\n"
+				f'User feedback: {row[f"{train_skill_output}__fb"]}\n\n'
+			)
+
+		examples = "\n".join(examples)
+
+		teacher_instruction_template = """
+		You are a helpful assistant
+		"""
+		# full template
+		full_template = f"""
+		{{prompt}}
+		{self.input_template}
+		{output_template_str}"""
+
+		message = f"""
+			A prompt is a text paragraph that outlines the expected actions and instructs the large language model (LLM) to \
+			generate a specific output. This prompt is concatenated with the input text, and the \
+			model then creates the required output.
+			This describes the full template how the prompt is concatenated with the input to produce the output:
+			```
+			{full_template}
+			```
+			Here:
+			- "{self.input_template}" is input template,
+			- "{{prompt}}" is the LLM prompt,
+			- "{output_template_str}" is the output template.
+
+			Model can produce erroneous output if a prompt is not well defined. \
+			In our collaboration, we’ll work together to refine a prompt. The process consists of two main steps:
+
+			## Step 1
+			I will provide you with the current prompt along with prediction examples. Each example contains the input text, the final prediction produced by the model, and the user feedback. \
+			User feedback indicates whether the model prediction is correct or not. \
+			Your task is to analyze the examples and user feedback, determining whether the \
+			existing instruction is describing the task reflected by these examples precisely, and suggests changes to the prompt to address the incorrect predictions.
+
+			## Step 2
+			Next, you will carefully review your reasoning in step 1, integrate the insights to refine the prompt, \
+			and provide me with the new prompt that improves the model’s performance.
+			## Current prompt
+			{self.instruction_template}
+			## Examples
+			{examples}
+			Summarize your analysis about incorrect predictions and suggest changes to the prompt."""
+		
+		reasoning = runtime.record_to_record(
+			record={'input': message},
+			instruction_template=teacher_instruction_template,
+			input_template="{input}",
+			output_template=[{
+				"name": "reasoning",
+				"description": "reasoning from the assistant"
+			}]
+		)['reasoning']
+
+		teacher_instruction_template = f"""
+		{reasoning}
+		"""
+
+		message = f"""
+			Now please carefully review your reasoning in Step 1 and help with Step 2: refining the prompt.
+			## Current prompt
+			{self.instruction_template}
+
+			## Follow this guidance to refine the prompt:
+
+			1. The new prompt should should describe the task precisely, and address the points raised in the user feedback.
+
+			2. The new prompt should be similar to the current instruction, and only differ in the parts that address the issues you identified in Step 1.
+					Example:
+					- Current prompt: "The model should generate a summary of the input text."
+					- New prompt: "The model should generate a summary of the input text. Pay attention to the original style."
+
+			3. Reply only with the new prompt. Do not include input and output templates in the prompt."""
+		new_prompt = runtime.record_to_record(
+			record={'input': message},
+			instruction_template=teacher_instruction_template,
+			input_template="{input}",
+			output_template=[{
+				"name": "output",
+				"description": "new prompt"
+			}]
+		)['output']
+		self.instruction_template = new_prompt
+		return new_prompt, reasoning
 
 class SynthesisSkill(Skill):
 	"""
@@ -166,6 +304,12 @@ class AnalysisSkill(Skill):
 				instruction_template=self.instruction_template,
 		)
 		return InternalSeries(output)
+	
+	def improve(self, **kwargs):
+		"""
+		Improves the skill.
+		"""
+		raise NotImplementedError
 
 class RetrievalSkill(Skill):
 	"""
@@ -195,3 +339,9 @@ class RetrievalSkill(Skill):
 			output_template=self.output_template,
 			instruction_template=self.instruction_template,
 		)
+	
+	def improve(self, **kwargs):
+		"""
+		Improves the skill.
+		"""
+		raise NotImplementedError

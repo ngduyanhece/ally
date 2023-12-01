@@ -15,8 +15,7 @@ from app.models.chats import ChatInput
 from app.models.databases.supabase.brains import (
     CreateBrainTestcaseProperties, CreateBrainTestsuiteProperties,
     UpdateBrainTestcaseProperties, UpdateBrainTestsuiteProperties)
-from app.models.testcase_data import (TestCaseDataDescription,
-                                      TestCaseDataEntity, TestRun)
+from app.models.testcase_data import (TestCaseDataEntity, TestRun)
 from app.modules.user.entity.user_identity import UserIdentity
 from app.modules.user.repository.get_user_identity import get_user_identity
 from app.repository.brain.create_brain_testcase_by_testsuite_id import \
@@ -40,8 +39,6 @@ from app.repository.task_goal.get_goal_by_brain_id_and_goal_id import \
     get_task_goal_by_brain_id_goal_id
 from app.repository.testcase_data.add_testcase_data_to_brain_testcase import \
     add_testcase_data_to_brain_testcase
-from app.repository.testcase_data.create_testcase_data_from_message import \
-    create_testcase_data_from_message
 from app.repository.testcase_data.delete_testcase_data_by_id import \
     delete_testcase_data_by_id
 from app.repository.testcase_data.remove_testcase_data_to_brain_testcase import \
@@ -152,18 +149,6 @@ async def delete_brain_testcase_handler(
 		raise HTTPException(status_code=404, detail="cannot delete brain testcase maybe brain_testsuite_id not found")
 	return delete_brain_testcase
 	
-@router.post(
-	"/test/message/testcase_data",
-	status_code=status.HTTP_201_CREATED,
-	dependencies=[Depends(AuthBearer())],
-)
-async def create_testcase_data_from_message_handler(
-	description: TestCaseDataDescription,
-	message_id: UUID = Query(..., description="The ID of the message"),
-) -> TestCaseDataEntity:
-	new_testcase_data = create_testcase_data_from_message(
-		message_id, description.description)
-	return new_testcase_data
 
 @router.delete(
 	"/test/testcase_data", 

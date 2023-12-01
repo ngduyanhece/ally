@@ -1,7 +1,18 @@
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
+
+class MessageLabel(BaseModel):
+	label: Optional[str]
+	feedback: Optional[str]
+
+class MessageLabelOutput(BaseModel):
+	id: Optional[str]
+	user_id: Optional[str]
+	label: Optional[str]
+	feedback: Optional[str]
 
 class TestCaseDataDescription(BaseModel):
 	description: str
@@ -13,7 +24,6 @@ class TestCaseDataEntity(BaseModel):
 	reference_output: str
 	context: str
 	last_update: str
-	chat_history: str
 	
 	def dict(self, *args, **kwargs):
 		test_case_dict = super().model_dump(*args, **kwargs)
@@ -21,4 +31,4 @@ class TestCaseDataEntity(BaseModel):
 
 class TestRun(BaseModel):
 	run_name: str
-	batch_size: int 
+	batch_size: int

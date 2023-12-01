@@ -82,5 +82,9 @@ class ChatService:
 		return ChatHistory(**response[0])
 
 	def get_chat_history(self, chat_id: str) -> list[GetChatHistoryOutput]:
-  		return self.repository.get_chat_history(chat_id)
+			return self.repository.get_chat_history(chat_id)
+	
+	def get_message_by_id(self, message_id: str) -> ChatHistory:
+		return self.repository.get_message_by_id(message_id)
+	
 	
