@@ -11,8 +11,8 @@ from app.models.settings import get_supabase_client
 from app.modules.brain.service.brain_service import BrainService
 from app.modules.file.entity.files import DocumentSerializable, FileEntity
 from app.modules.file.repository.files import Files
-from app.modules.notification.entity.notification import (
-    NotificationsStatusEnum, UpdateNotificationProperties)
+from app.modules.knowledge.entity.knowledge import KnowledgeStatus
+from app.modules.knowledge.service.knowledge_service import KnowledgeService
 from app.modules.notification.service.notification_service import \
     NotificationService
 from app.packages.embeddings.vectors import Neurons
@@ -22,6 +22,7 @@ from app.packages.files.processors import FILE_PROCESSORS
 logger = get_logger(__name__)
 brain_service = BrainService()
 notification_service = NotificationService()
+knowledge_service = KnowledgeService()
 
 def create_response(message, type):
 	return {"message": message, "type": type}
@@ -251,7 +252,7 @@ class FileService:
 		file_name: str,
 		file_original_name: str,
 		brain_id,
-		notification_id=None,
+		knowledge_id=None,
 	):
 		try:
 			tmp_file_name = "tmp-file-" + file_name
@@ -276,18 +277,24 @@ class FileService:
 				f.close()
 				os.remove(tmp_file_name)
 
-				if notification_id:
+				if knowledge_id:
 					notification_message = {
 						"status": self.message["type"],
 						"message": self.message["message"],
 						"name": file_instance.file.filename if file_instance.file else "",
 					}
-					notification_service.update_notification_by_id(
-						notification_id, UpdateNotificationProperties(
-							status=NotificationsStatusEnum.Done,
-							message=str(notification_message),
-						),
+					knowledge_service.update_knowledge_property_by_id(
+						knowledge_id, {"status": KnowledgeStatus.Done}
 					)
+					knowledge_service.update_knowledge_property_by_id(
+						knowledge_id, {"message": str(notification_message)}
+					)
+					# notification_service.update_notification_by_id(
+					# 	notification_id, UpdateNotificationProperties(
+					# 		status=NotificationsStatusEnum.Done,
+					# 		message=str(notification_message),
+					# 	),
+					# )
 				brain_service.update_brain_last_update_time(brain_id)
 
 				return True
@@ -297,11 +304,17 @@ class FileService:
 				"message": "There was an error uploading the file. Please check the file and try again. If the issue persist, please open an issue on Github",
 				"name": file_instance.file.filename if file_instance.file else "",
 			}
-			notification_service.update_notification_by_id(
-				notification_id, UpdateNotificationProperties(
-					status=NotificationsStatusEnum.Done,
-					message=str(notification_message),
-				),
+			# notification_service.update_notification_by_id(
+			# 	notification_id, UpdateNotificationProperties(
+			# 		status=NotificationsStatusEnum.Done,
+			# 		message=str(notification_message),
+			# 	),
+			# )
+			knowledge_service.update_knowledge_property_by_id(
+				knowledge_id, {"status": KnowledgeStatus.Error}
+			)
+			knowledge_service.update_knowledge_property_by_id(
+				knowledge_id, {"message": str(notification_message)}
 			)
 			raise e
 

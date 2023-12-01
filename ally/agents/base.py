@@ -10,7 +10,8 @@ from ally.runtimes.base import Runtime
 from ally.skills.base import Skill
 from ally.skills.skillset import LinearSkillSet, SkillSet
 from ally.utils.internal_data import InternalDataFrame
-from ally.utils.logs import print_dataframe, print_text
+from ally.utils.logs import (highlight_differences, is_running_in_jupyter,
+                             print_dataframe, print_text)
 
 
 class Agent(BaseModel, ABC):
@@ -192,94 +193,7 @@ class Agent(BaseModel, ABC):
 				break
 
 		return train_skill_name, train_skill_output, acc_score
-	
-	def pe_optimization(self, skill, examples, teacher_runtime):
-		teacher_instruction_template = """
-		You are a helpful assistant
-		"""
-		message = f"""
-		A prompt is a text paragraph that outlines the expected actions and instructs the model to \
-		generate a specific output. This prompt is concatenated with the input text, and the \
-		model then creates the required output. Formally, the prompt is a prefix to the input:
-		output = model(concatenate(prompt, input))
-		Model can produce erroneous output if the prompt is not well defined. \
-		In our collaboration, we’ll work together to refine a prompt. The process consists of two main steps:
-
-		## Step 1
-		I will provide you with the current prompt, how the prompt is concatenated with the input text
-		(i.e., "full template"), along with some example(s) that are associated with
-		this prompt. Each example contains the input, the final answer produced by the model, and the user feedback.
-		Your task is to analyze the examples, determining whether the
-		existing prompt is decsribing the task reflected by these examples precisely, and suggest
-		changes to the prompt.
-
-		## Step 2
-		Next, you will carefully review your reasoning in step 1, integrate the insights to craft a
-		new, optimized prompt.
-		## Current Prompt
-		{skill.instruction_template}
-
-		## Full Template
-		{{current prompt}}
-		{skill.input_template}
-		{skill.output_template}
-		## Examples
-		{examples}
-		## Instructions
-		For some of these examples, the user feedback points out that the model is not producing the correct output. \
-		This may be due to the prompt being misleading or not describing the task precisely. 
-
-		Please examine the example(s) carefully. Note that the user feedback should be considered as ground truth, but \
-		the prompts (task descriptions) may be incorrect and need modification.
-		For each example, provide reasoning according to the following template:
-
-		### Example <id>
-		Input: <input>
-		Output: <output>
-		Feedback: <feedback>
-		Is the output correct according to the feedback: <yes or no, and your reasoning>
-		To output the correct label, is it necessary to edit the prompt: <yes or no, and your
-		reasoning>
-		If yes, provide detailed analysis and actionable suggestions to edit the prompt: <analysis and
-		suggestions>
-		If yes, and you think there is some knowledge to learn to answer this example, please
-		provide the knowledge: <knowledge>
-		"""
-		reasoning = teacher_runtime.record_to_record(
-				record={'input': message},
-				instruction_template=teacher_instruction_template,
-				input_template="{input}",
-				output_template=[{
-					"name": "reasoning",
-					"description": "reasoning from the assistant"
-				}]
-		)['reasoning']
-
-		teacher_instruction_template = f"""
-		{reasoning}
-		"""
-		message = f"""
-		Now please carefully review your reasoning in Step 1 and help with Step 2: refining the prompt.
-		## Current prompt
-		{skill.instruction_template}
-		
-		## Instructions
-		- The new prompt should be concise and direct.
-		- The new prompt should should describe the task precisely and address the points raised in the user feedback.
-		- Include a few examples in the prompt to help the model learn the task, by providing inputs and outputs that follow full template.
-		- Reply only with the prompt. Do not include other text.
-		"""
-		new_prompt = teacher_runtime.record_to_record(
-				record={'input': message},
-				instruction_template=teacher_instruction_template,
-				input_template="{input}",
-				output_template=[{
-					"name": "output",
-					"description": "new prompt"
-				}]
-			)['output']
-		return new_prompt, reasoning
-  		
+			
 	def learn(
 		self,
 		learning_iterations: int = 3,
@@ -305,8 +219,6 @@ class Agent(BaseModel, ABC):
 		runtime: Runtime = self.get_runtime(runtime=runtime)
 		teacher_runtime: Runtime = self.get_teacher_runtime(runtime=teacher_runtime)
 
-		experience = ""
-		final_instruction = ""
 		for iteration in range(learning_iterations):
 
 			print_text(f'\n\n=> Iteration #{iteration}: Getting feedback, analyzing and improving ...')
@@ -316,36 +228,44 @@ class Agent(BaseModel, ABC):
 			predictions = self.skills.apply(inputs, runtime=runtime)
 
 			feedback = self.environment.get_feedback(self.skills, predictions, num_feedbacks=num_feedbacks)
-			print('Predictions and feedback:')
-			fb = feedback.feedback.rename(columns=lambda x: x + '__fb' if x in predictions.columns else x)
-			analyzed_df = fb.merge(predictions, left_index=True, right_index=True)
-			print_dataframe(analyzed_df)
-
-			train_skill_name, train_skill_output, accuracy = self.select_skill_to_train(feedback, accuracy_threshold)
-			if not train_skill_name:
-				print_text('No skill to improve found. Continue learning...')
+			# TODO: this is just pretty printing - remove later for efficiency
+			print("Predictions and feedback:")
+			print_dataframe(
+				feedback.feedback.rename(
+					columns=lambda x: x + "__fb" if x in predictions.columns else x
+				).merge(predictions, left_index=True, right_index=True)
+			)
+			# -----------------------------
+			skill_mismatch = feedback.match.fillna(True) == False
+			has_errors = skill_mismatch.any(axis=1).any()
+			if not has_errors:
+				print_text("No errors found!")
 				continue
+			first_skill_with_errors = skill_mismatch.any(axis=0).idxmax()
 
-			train_skill = self.skills[train_skill_name]
-			print_text(f'Output to improve: "{train_skill_output}" (Skill="{train_skill_name}")\n'
-                       f'Accuracy = {accuracy * 100:0.2f}%', style='bold red')
-			
-			examples = []
-			for row in analyzed_df.to_dict(orient='records'):
-				# if fb marked as NaN, skip
-				if not row[f'{train_skill_output}__fb']:
-					continue
-				output_template_str = " ".join([t["description"] + ":" + "{" + t["name"] + "}" for t in train_skill.output_template])
-				examples.append(
-						f'{train_skill.input_template.format(**row)}\n'
-						f'{output_template_str.format(**row)}\n'
-						f'Feedback: {row[f"{train_skill_output}__fb"]}\n\n'
+			accuracy = feedback.get_accuracy()
+			# TODO: iterating over skill can be more complex, and we should take order into account
+			for skill_output, skill_name in self.skills.get_skill_outputs().items():
+				skill = self.skills[skill_name]
+				if skill.frozen:
+						continue
+				print_text(
+					f'Skill output to improve: "{skill_output}" (Skill="{skill_name}")\n'
+					f"Accuracy = {accuracy[skill_output] * 100:0.2f}%",
+					style="bold red",
 				)
-			new_instructions, reasoning = self.pe_optimization(train_skill, '\n'.join(examples), teacher_runtime)
-			experience += f"\n{reasoning}\n"
-			train_skill.instruction_template = new_instructions
-			final_instruction = new_instructions
-			print_text(f'{train_skill.instruction_template}', style='bold green')
+				old_instructions = skill.instructions
+				skill.improve(
+					predictions, skill_output, feedback, runtime=teacher_runtime
+				)
+				if is_running_in_jupyter():
+					highlight_differences(old_instructions, skill.instructions)
+				else:
+					print_text(skill.instructions, style="bold green")
 
-		#return the best prompt and the accumulated experience
-		return final_instruction, experience
+				if skill_name == first_skill_with_errors:
+						break
+
+			print_text("Train is done!")
+
+			

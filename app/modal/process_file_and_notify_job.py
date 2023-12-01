@@ -50,11 +50,11 @@ async def file_process_and_notify(
 	file_name,
 	file_original_name,
 	brain_id,
-	notification_id,
+	knowledge_id,
 ):
 	await file_service.process_file_and_notify(
 		file_name=file_name,
 		file_original_name=file_original_name,
 		brain_id=brain_id,
-		notification_id=notification_id if notification_id else None,
+		knowledge_id=knowledge_id if knowledge_id else None,
 	)

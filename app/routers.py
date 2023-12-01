@@ -7,6 +7,7 @@ from app.modules.chat.controller import chat_routes
 from app.modules.knowledge.controller import knowledge_routes
 from app.modules.notification.controller import notification_routes
 from app.modules.prompt.controller import prompt_routes
+from app.modules.test_data.controller import test_data_routes
 from app.modules.user.controller import user_routes
 
 router = APIRouter()
@@ -20,3 +21,4 @@ router.include_router(agent_routes.agent_router, tags=["Agent"])
 router.include_router(notification_routes.notification_router, 
                       tags=["Notification"])
 router.include_router(knowledge_routes.knowledge_router, tags=["Knowledge"])
+router.include_router(test_data_routes.test_data_router, tags=["Test Data"])

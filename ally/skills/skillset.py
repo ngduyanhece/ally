@@ -6,8 +6,11 @@ from typing import Dict, List, Optional, OrderedDict, Union
 from pydantic import BaseModel, field_validator, model_validator
 
 from ally.runtimes.base import Runtime
-from ally.skills.base import Skill
-from ally.utils.internal_data import InternalDataFrame, Record
+from ally.skills.base import (AnalysisSkill, Skill, SynthesisSkill,
+                              TransformSkill)
+from ally.utils.internal_data import (InternalDataFrame,
+                                      InternalDataFrameConcat, InternalSeries,
+                                      Record)
 from ally.utils.logs import print_text
 
 
@@ -165,7 +168,9 @@ class LinearSkillSet(SkillSet):
 		"""
 		if improved_skill:
 			# start from the specified skill, assuming previous skills have already been applied
-			skill_sequence = self.skill_sequence[self.skill_sequence.index(improved_skill):]
+			skill_sequence = self.skill_sequence[
+					self.skill_sequence.index(improved_skill) :
+			]
 		else:
 			skill_sequence = self.skill_sequence
 		skill_input = input
@@ -174,25 +179,20 @@ class LinearSkillSet(SkillSet):
 			# use input dataset for the first node in the pipeline
 			print_text(f"Applying skill: {skill_name}")
 			skill_output = skill.apply(skill_input, runtime)
-			if isinstance(skill_output, InternalDataFrame) and isinstance(skill_input, InternalDataFrame):
+			if isinstance(skill, TransformSkill):
 				# Columns to drop from skill_input because they are also in skill_output
 				cols_to_drop = set(skill_output.columns) & set(skill_input.columns)
 				skill_input_reduced = skill_input.drop(columns=cols_to_drop)
 
 				skill_input = skill_input_reduced.merge(
-						skill_output,
-						left_index=True,
-						right_index=True,
-						how='inner'
+						skill_output, left_index=True, right_index=True, how="inner"
 				)
-			elif isinstance(skill_output, InternalDataFrame) and isinstance(skill_input, dict):
+			elif isinstance(skill, (AnalysisSkill, SynthesisSkill)):
 				skill_input = skill_output
-			elif isinstance(skill_output, dict) and isinstance(skill_input, InternalDataFrame):
-				skill_input = skill_output
-			elif isinstance(skill_output, dict) and isinstance(skill_input, dict):
-				skill_input = dict(skill_output, **skill_input)
 			else:
-				raise ValueError(f"Unsupported input type: {type(skill_input)} and output type: {type(skill_output)}")
+				raise ValueError(f"Unsupported skill type: {type(skill)}")
+		if isinstance(skill_input, InternalSeries):
+				skill_input = skill_input.to_frame().T
 		return skill_input
 
 	def __rich__(self):
@@ -203,3 +203,73 @@ class LinearSkillSet(SkillSet):
 			text += f'[bold underline green]{skill.name}[/bold underline green]\n' \
 								f'[green]{skill.instructions}[green]\n'
 		return text
+
+class ParallelSkillSet(SkillSet):
+	"""
+	Represents a set of skills that are acquired simultaneously to reach a goal.
+
+	In a ParallelSkillSet, each skill can be developed independently of the others. This is useful
+	for agents that require multiple, diverse capabilities, or tasks where each skill contributes a piece of
+	the overall solution.
+
+	Examples:
+		Create a ParallelSkillSet with a list of skills specified as BaseSkill instances
+		>>> from adala.skills import ParallelSkillSet, ClassificationSkill, TransformSkill
+		>>> skillset = ParallelSkillSet(skills=[ClassificationSkill(), TransformSkill()])
+	"""
+	def apply(
+		self,
+		input: Union[InternalSeries, InternalDataFrame],
+		runtime: Runtime,
+		improved_skill: Optional[str] = None,
+	) -> InternalDataFrame:
+		"""
+		Applies each skill on the dataset, enhancing the agent's experience.
+
+		Args:
+			input (Union[Record, InternalDataFrame]): Input data
+			runtime (Runtime): The runtime environment in which to apply the skills.
+			improved_skill (Optional[str], optional): Unused in ParallelSkillSet. Defaults to None.
+		Returns:
+			Union[Record, InternalDataFrame]: Skill predictions.
+		"""
+		if improved_skill:
+			# start from the specified skill, assuming previous skills have already been applied
+			skill_sequence = [improved_skill]
+		else:
+			skill_sequence = list(self.skills.keys())
+
+		skill_outputs = []
+		for i, skill_name in enumerate(skill_sequence):
+			skill = self.skills[skill_name]
+			# use input dataset for the first node in the pipeline
+			print_text(f"Applying skill: {skill_name}")
+			skill_output = skill.apply(input, runtime)
+			skill_outputs.append(skill_output)
+		if not skill_outputs:
+			return InternalDataFrame()
+		else:
+			if isinstance(skill_outputs[0], InternalDataFrame):
+				skill_outputs = InternalDataFrameConcat(skill_outputs, axis=1)
+				cols_to_drop = set(input.columns) & set(skill_outputs.columns)
+				skill_input_reduced = input.drop(columns=cols_to_drop)
+
+				return skill_input_reduced.merge(
+					skill_outputs, left_index=True, right_index=True, how="inner"
+				)
+			elif isinstance(skill_outputs[0], (dict, InternalSeries)):
+				# concatenate output to each row of input
+				output = skill_outputs[0]
+				return InternalDataFrameConcat(
+					[
+						input,
+						InternalDataFrame(
+							[output] * len(input),
+							columns=output.index,
+							index=input.index,
+						),
+					],
+					axis=1,
+				)
+			else:
+				raise ValueError(f"Unsupported output type: {type(skill_outputs[0])}")

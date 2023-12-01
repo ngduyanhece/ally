@@ -38,13 +38,3 @@ class GetChatHistoryOutput(BaseModel):
 	message_time: str
 	prompt_id: Optional[UUID] | None
 	brain_id: Optional[UUID] | None
-
-class MessageLabel(BaseModel):
-	label: Optional[str]
-	feedback: Optional[str]
-
-class MessageLabelOutput(BaseModel):
-	id: Optional[str]
-	user_id: Optional[str]
-	label: Optional[str]
-	feedback: Optional[str]
