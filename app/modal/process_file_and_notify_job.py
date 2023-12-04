@@ -30,7 +30,8 @@ image = modal.Image.debian_slim(
 	"pdfminer.six==20221105",
 	"unstructured_pytesseract==0.3.12",
 	"unstructured_inference==0.7.16",
-	"python-pptx==0.6.23"
+	"python-pptx==0.6.23",
+	"newspaper3k"
 ).run_commands("apt-get update && apt-get install ffmpeg libsm6 libxext6  -y")
 
 stub = modal.Stub(
@@ -55,6 +56,22 @@ async def file_process_and_notify(
 	await file_service.process_file_and_notify(
 		file_name=file_name,
 		file_original_name=file_original_name,
+		brain_id=brain_id,
+		knowledge_id=knowledge_id if knowledge_id else None,
+	)
+
+@stub.function(
+	image=image,
+	retries=3,
+	container_idle_timeout=50
+)
+async def crawl_website_and_notify(
+	url,
+	brain_id,
+	knowledge_id,
+):
+	await file_service.process_crawl_and_notify(
+		crawl_website_url=url,
 		brain_id=brain_id,
 		knowledge_id=knowledge_id if knowledge_id else None,
 	)

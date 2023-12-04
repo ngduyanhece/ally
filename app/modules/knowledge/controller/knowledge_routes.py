@@ -143,11 +143,12 @@ async def crawl_endpoint(
 	)
 	added_knowledge = knowledge_service.add_knowledge(knowledge_to_add)
 	logger.info(f"Knowledge {added_knowledge} added successfully")
-
-	await file_service.process_crawl_and_notify(
-		crawl_website_url=crawl_website.url,
-		brain_id=brain_id,
-		knowledge_id=added_knowledge.id if added_knowledge.id else None,
+	crawl_website_and_notify = Function.lookup(
+		"file-process-and-notify", "crawl_website_and_notify")
+	_ = crawl_website_and_notify.spawn(
+		crawl_website.url,
+		brain_id,
+		knowledge_id=added_knowledge.id
 	)
 	return {"message": "Crawl processing has started."}
 
