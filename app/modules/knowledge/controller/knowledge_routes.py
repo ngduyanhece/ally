@@ -21,6 +21,7 @@ from app.modules.notification.entity.notification import (
 from app.modules.notification.service.notification_service import \
     NotificationService
 from app.modules.user.entity.user_identity import UserIdentity
+from app.packages.files.crawl.crawler import CrawlWebsite
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ async def healthz():
 @knowledge_router.post(
 	"/upload",
 	dependencies=[Depends(AuthBearer())])
-async def upload_file(
+async def upload_file_endpoint(
 	uploadFile: UploadFile,
 	brain_id: UUID = Query(..., description="The ID of the brain"),
 	chat_id: Optional[UUID] = Query(None, description="The ID of the chat"),
@@ -113,6 +114,42 @@ async def upload_file(
 	# )
 	return {"message": "File processing has started."}
 
+@knowledge_router.post(
+	"/crawl",
+	dependencies=[Depends(AuthBearer())])
+async def crawl_endpoint(
+	crawl_website: CrawlWebsite,
+	brain_id: UUID = Query(..., description="The ID of the brain"),
+	chat_id: Optional[UUID] = Query(None, description="The ID of the chat"),
+	current_user: UserIdentity = Depends(get_current_user),
+):
+	validate_brain_authorization(
+		brain_id, current_user.id, [RoleEnum.Editor, RoleEnum.Owner]
+	)
+	upload_notification = None
+
+	if chat_id:
+		upload_notification = notification_service.add_notification(
+			CreateNotificationProperties(
+				action="CRAWL",
+				chat_id=chat_id,
+				status=NotificationsStatusEnum.Pending,
+			)
+		)
+	knowledge_to_add = CreateKnowledgeProperties(
+		brain_id=brain_id,
+		url=crawl_website.url,
+		extension="html",
+	)
+	added_knowledge = knowledge_service.add_knowledge(knowledge_to_add)
+	logger.info(f"Knowledge {added_knowledge} added successfully")
+
+	await file_service.process_crawl_and_notify(
+		crawl_website_url=crawl_website.url,
+		brain_id=brain_id,
+		knowledge_id=added_knowledge.id if added_knowledge.id else None,
+	)
+	return {"message": "Crawl processing has started."}
 
 @knowledge_router.get(
 	"/knowledge", dependencies=[Depends(AuthBearer())]

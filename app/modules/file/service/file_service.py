@@ -1,3 +1,4 @@
+import io
 import os
 import tempfile
 import time
@@ -16,6 +17,7 @@ from app.modules.knowledge.service.knowledge_service import KnowledgeService
 from app.modules.notification.service.notification_service import \
     NotificationService
 from app.packages.embeddings.vectors import Neurons
+from app.packages.files.crawl.crawler import CrawlWebsite
 from app.packages.files.file import compute_sha1_from_file
 from app.packages.files.processors import FILE_PROCESSORS
 
@@ -318,5 +320,56 @@ class FileService:
 			)
 			raise e
 
+	async def process_crawl_and_notify(
+		self,
+		crawl_website_url: str,
+		brain_id,
+		knowledge_id=None,
+	):
+		crawl_website = CrawlWebsite(url=crawl_website_url)
+
+		if not crawl_website.checkGithub():
+			file_path, file_name = crawl_website.process()
+
+			with open(file_path, "rb") as f:
+				file_content = f.read()
+
+			# Create a file-like object in memory using BytesIO
+			file_object = io.BytesIO(file_content)
+			upload_file = UploadFile(
+				file=file_object, filename=file_name, size=len(file_content)
+			)
+			file_instance = FileEntity(file=upload_file)
+			
+			await self.filter_file(
+				file=file_instance,
+				brain_id=brain_id,
+			)
+
+			if knowledge_id:
+				notification_message = {
+					"status": self.message["type"],
+					"message": self.message["message"],
+					"name": file_instance.file.filename if file_instance.file else "",
+				}
+				knowledge_service.update_knowledge_property_by_id(
+					knowledge_id, {"status": KnowledgeStatus.Done}
+				)
+				knowledge_service.update_knowledge_property_by_id(
+					knowledge_id, {"message": str(notification_message)}
+				)
+				# notification_service.update_notification_by_id(
+				# 	notification_id, UpdateNotificationProperties(
+				# 		status=NotificationsStatusEnum.Done,
+				# 		message=str(notification_message),
+				# 	),
+				# )
+			brain_service.update_brain_last_update_time(brain_id)
+
+			return True
+
+
+
 	def delete_file_from_storage(self, file_identifier: str):
 		return self.repository.delete_file_from_storage(file_identifier)
+
