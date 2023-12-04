@@ -12,7 +12,7 @@ ally_dir = Path(__file__).parent.parent.parent
 brain_service = BrainService()
 
 image = modal.Image.debian_slim(
-		python_version="3.10"
+		python_version="3.11"
 ).pip_install(
 	"fastapi==0.103.2",
 	"langchain==0.0.325",
@@ -25,7 +25,9 @@ image = modal.Image.debian_slim(
 	"PyMuPDF==1.23.4",
 	"tiktoken==0.5.1",
 	"tqdm==4.66.1",
-	"pandas==2.1.2"
+	"pandas==2.1.2",
+	"beautifulsoup4",
+	"newspaper3k",
 )
 
 stub = modal.Stub(

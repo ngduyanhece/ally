@@ -9,7 +9,7 @@ ally_dir = Path(__file__).parent.parent.parent
 file_service = FileService()
 
 image = modal.Image.debian_slim(
-		python_version="3.10"
+		python_version="3.11"
 ).pip_install(
 	"fastapi==0.103.2",
 	"langchain==0.0.325",
@@ -31,7 +31,8 @@ image = modal.Image.debian_slim(
 	"unstructured_pytesseract==0.3.12",
 	"unstructured_inference==0.7.16",
 	"python-pptx==0.6.23",
-	"newspaper3k"
+	"newspaper3k",
+	"beautifulsoup4"
 ).run_commands("apt-get update && apt-get install ffmpeg libsm6 libxext6  -y")
 
 stub = modal.Stub(

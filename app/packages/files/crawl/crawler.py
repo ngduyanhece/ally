@@ -5,7 +5,6 @@ import unicodedata
 from urllib.parse import urljoin
 
 import requests
-from newspaper import Article
 from pydantic import BaseModel
 
 from app.core.settings import settings
@@ -30,6 +29,7 @@ class CrawlWebsite(BaseModel):
 			raise
 
 	def extract_content(self, url):
+		from newspaper import Article
 		article = Article(url)
 		try:
 			article.download()

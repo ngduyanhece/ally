@@ -20,5 +20,3 @@ pytest==7.4.3
 modal==0.55.3994
 pandas==2.1.2
 html5lib==1.1
-newspaper3k
-beautifulsoup4
