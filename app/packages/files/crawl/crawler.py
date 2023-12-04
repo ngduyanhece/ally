@@ -5,7 +5,6 @@ import unicodedata
 from urllib.parse import urljoin
 
 import requests
-from bs4 import BeautifulSoup
 from newspaper import Article
 from pydantic import BaseModel
 
@@ -41,6 +40,7 @@ class CrawlWebsite(BaseModel):
 		return article.text
 
 	def _process_recursive(self, url, depth, visited_urls):
+		from bs4 import BeautifulSoup
 		if depth == 0 or url in visited_urls:
 			return ""
 

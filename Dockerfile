@@ -27,6 +27,7 @@ COPY ./requirements.txt .
 RUN pip install --upgrade pip
 
 # Increase timeout to wait for the new installation
+RUN python3 -m pip install beautifulsoup4
 RUN pip install --no-cache-dir -r requirements.txt --timeout 200
 
 # Copy the rest of the application
