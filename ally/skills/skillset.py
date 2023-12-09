@@ -6,8 +6,7 @@ from typing import Dict, List, Optional, OrderedDict, Union
 from pydantic import BaseModel, field_validator, model_validator
 
 from ally.runtimes.base import Runtime
-from ally.skills.base import (AnalysisSkill, Skill, SynthesisSkill,
-                              TransformSkill)
+from ally.skills.base import Skill, TransformSkill
 from ally.utils.internal_data import (InternalDataFrame,
                                       InternalDataFrameConcat, InternalSeries,
                                       Record)
@@ -24,7 +23,8 @@ class SkillSet(BaseModel, ABC):
 	cases, task decomposition can involve a graph-based approach.
 
 	Attributes:
-			skills (Dict[str, Skill]): A dictionary of skills in the skill set.
+		skills (Dict[str, Skill]): A dictionary of skills in the skill set.
+		policy (Optional[Skill], optional): The policy to use for the skill set. Defaults to None.
 	"""
     
 	skills: Dict[str, Skill]
@@ -110,7 +110,7 @@ class SkillSet(BaseModel, ABC):
 		Returns:
 			Dict[str, str]: Dictionary of skill outputs. Keys are output names and values are skill names
 		"""
-		return {field: skill.name for skill in self.skills.values() for field in skill.get_output_fields()}
+		return {'output': skill.name for skill in self.skills.values()}
 	
 
 class LinearSkillSet(SkillSet):
@@ -127,8 +127,8 @@ class LinearSkillSet(SkillSet):
 	Examples:
 
 		Create a LinearSkillSet with a list of skills specified as BaseSkill instances:
-		>>> from ally.skills import LinearSkillSet, TransformSkill, AnalysisSkill, ClassificationSkill
-		>>> skillset = LinearSkillSet(skills=[TransformSkill(), ClassificationSkill(), AnalysisSkill()])
+		>>> from ally.skills import LinearSkillSet, TransformSkill, ClassificationSkill
+		>>> skillset = LinearSkillSet(skills=[TransformSkill()])
 	"""
     
 	skill_sequence: List[str] = None
@@ -169,7 +169,7 @@ class LinearSkillSet(SkillSet):
 		if improved_skill:
 			# start from the specified skill, assuming previous skills have already been applied
 			skill_sequence = self.skill_sequence[
-					self.skill_sequence.index(improved_skill) :
+					self.skill_sequence.index(improved_skill)
 			]
 		else:
 			skill_sequence = self.skill_sequence
@@ -187,8 +187,6 @@ class LinearSkillSet(SkillSet):
 				skill_input = skill_input_reduced.merge(
 						skill_output, left_index=True, right_index=True, how="inner"
 				)
-			elif isinstance(skill, (AnalysisSkill, SynthesisSkill)):
-				skill_input = skill_output
 			else:
 				raise ValueError(f"Unsupported skill type: {type(skill)}")
 		if isinstance(skill_input, InternalSeries):

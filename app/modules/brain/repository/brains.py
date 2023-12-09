@@ -1,6 +1,8 @@
+from typing import List
 from uuid import UUID
 
-from app.modules.brain.entity.brain import (BrainEntity,
+from app.modules.brain.entity.brain import (BrainEntity, BrainToolEntity,
+                                            BrainToolkitEntity,
                                             CreateFullBrainProperties,
                                             CreateRuntimeProperties,
                                             FullBrainEntityWithRights,
@@ -366,3 +368,43 @@ class Brains(BrainsInterface):
 		self.db.table("vectors").delete().in_("id", vectors_no_longer_used_ids).execute()
 
 		return {"message": f"File {file_name} in brain {brain_id} has been deleted."}
+	
+	def get_tools_from_brain(self, brain_id: UUID) -> List[BrainToolEntity]:
+		response = (
+			self.db.from_("tools")
+			.select("id, name, tool_kwargs")
+			.filter("brain_id", "eq", brain_id)
+			.execute()
+		)
+		tools: List[BrainToolEntity] = []
+		for item in response.data:
+				tools.append(
+					BrainToolEntity(
+						id=item["id"],
+						name=item["name"],
+						tool_kwargs=item["tool_kwargs"],
+					)
+				)
+		return tools
+	
+	def get_toolkits_from_brain(self, brain_id: UUID) -> List[BrainToolkitEntity]:
+		response = (
+			self.db.from_("toolkits")
+			.select("id, name")
+			.filter("brain_id", "eq", brain_id)
+			.execute()
+		)
+		toolkits: List[BrainToolkitEntity] = []
+		for item in response.data:
+				toolkits.append(
+					BrainToolkitEntity(
+						id=item["id"],
+						name=item["name"],
+					)
+				)
+		return toolkits
+	
+
+	
+
+			

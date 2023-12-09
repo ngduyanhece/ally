@@ -15,7 +15,6 @@ image = modal.Image.debian_slim(
 		python_version="3.11"
 ).pip_install(
 	"fastapi==0.103.2",
-	"langchain==0.0.325",
 	"pydantic==2.4.2",
 	"pydantic-settings==2.0.3",
 	"supabase==1.1.1",
@@ -28,6 +27,9 @@ image = modal.Image.debian_slim(
 	"pandas==2.1.2",
 	"beautifulsoup4",
 	"newspaper3k",
+	"langchain==0.0.346",
+	"langchain-core==0.0.10",
+	"google-api-python-client==2.110.0"
 )
 
 stub = modal.Stub(

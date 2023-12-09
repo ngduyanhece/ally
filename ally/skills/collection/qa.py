@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 from ally.skills.base import TransformSkill
 
@@ -18,12 +17,8 @@ class QuestionAnsweringSkill(TransformSkill):
 		prediction_field (str): Field name for the generated answer.
 	"""
 	
-	input_template: str = "Question: {input}"
-
-	instruction_template: str = 'Answer the question.'
-	output_template: List[Dict[str, str]] = [
-		{
-			"name": "answer",
-			"description": "the answer to the question"
-		}
-	]
+	name: str = 'classification'
+	description: str = 'tool used to answer questions based on the provided input'
+	input_template: str = "Input: {input}"
+	instruction_template: str = 'Answer the following question'
+	prefix: str = "try to answer the question as best as you can"

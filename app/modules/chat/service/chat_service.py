@@ -68,9 +68,13 @@ class ChatService:
 			return enriched_history
 
 	def format_chat_history(self, history) -> list[Tuple[str, str]]:
-		"""Format the chat history into a list of tuples (human, ai)"""
-		return [(chat.user_message, chat.assistant) for chat in history]
-	
+		"""Format the chat history into a list of tuples"""
+		template = f"""
+		USER: {history.user_message}
+		ASSISTANT: {history.assistant}
+		"""
+		return " ".join([template.format(**message) for message in history])
+		
 	def update_chat_history(self, chat_history: CreateChatHistory) -> ChatHistory:
 		response: list[ChatHistory] = self.repository.update_chat_history(
 			chat_history)

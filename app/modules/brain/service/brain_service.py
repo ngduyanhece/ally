@@ -129,3 +129,9 @@ class BrainService:
 	
 	def delete_file_from_brain(self, brain_id, file_name: str):
 		return self.repository.delete_file_from_brain(brain_id, file_name)
+	
+	def get_tools_from_brain(self, brain_id: UUID):
+		return self.repository.get_tools_from_brain(brain_id)
+	
+	def get_toolkits_from_brain(self, brain_id: UUID):
+		return self.repository.get_toolkits_from_brain(brain_id)

@@ -2,6 +2,7 @@ from typing import ClassVar, Dict, Optional
 from uuid import UUID
 
 import pandas as pd
+from langchain.memory import ConversationBufferMemory
 from langchain.schema import Document
 from pydantic import BaseModel
 from supabase.client import Client, create_client
@@ -15,9 +16,9 @@ from ally.skills.skillset import LinearSkillSet
 from ally.utils.internal_data import InternalDataFrame_encoder
 from ally.vector_store.base import AllyVectorStore
 from app.core.settings import settings
-from app.llm.utils.retrieval_input_template_from_a_prompt import (
-    get_input_template_from_a_prompt_inout_template,
-    retrieval_input_template_from_a_inout_template)
+from app.llm.utils.retrieval_input_template_from_a_prompt import \
+    get_input_template_from_a_prompt_inout_template
+from app.logger import get_logger
 from app.modules.agent.entity.agent import BrainAgentInput
 from app.modules.brain.entity.brain import (FullBrainEntityWithRights,
                                             RuntimeType)
@@ -32,11 +33,24 @@ from app.modules.test_data.service.test_data_service import TestDataService
 from app.packages.files.file import compute_sha1_from_string
 from app.vectorstore.supabase import CustomSupabaseVectorStore
 
+logger = get_logger(__name__)
+
 prompt_service = PromptService()
 chat_service = ChatService()
 brain_service = BrainService()
 file_service = FileService()
 test_data_service = TestDataService()
+
+
+class Thread(ConversationBufferMemory):
+	memory_key: str = "chat_history"
+	chat_id: UUID
+	
+	def buffer_as_str(self) -> str:
+		transformed_history = chat_service.format_chat_history(
+			chat_service.get_enrich_chat_history(self.chat_id))
+		return transformed_history
+  		
 
 class BrainAgent(BaseModel):
 	"""
@@ -106,17 +120,28 @@ class BrainAgent(BaseModel):
 			self,
 			prompt: Prompt,
 			vector_store: CustomSupabaseVectorStore) -> Skill:
-		input_template = retrieval_input_template_from_a_inout_template(
+		input_template = get_input_template_from_a_prompt_inout_template(
 			prompt.input_template)
+		brain_tools = brain_service.get_tools_from_brain(
+			self.brain_details.id)
+		tool_names = [tool.name for tool in brain_tools]
+		tool_kwargs = {}
+		for tool in brain_tools:
+			tool_kwargs = tool_kwargs | tool.tool_kwargs
+		brain_toolkits = brain_service.get_toolkits_from_brain(
+			self.brain_details.id)
+		toolkits_name = [toolkit.name for toolkit in brain_toolkits]
+
 		return RetrievalSkill(
 			name=self.brain_details.name,
 			description=self.brain_details.description,
-			instruction_template=prompt.content,
 			input_template=input_template,
-			output_template=[dict(template) for template in prompt.output_template],
+			instruction_template=prompt.content,
 			vector_store=vector_store,
 			query_input_fields=[template.name for template in prompt.input_template],
-			query_output_field="context",
+			tool_names=tool_names,
+			tool_kwargs=tool_kwargs,
+			tool_kit_names=toolkits_name
 		)
 	
 	def _create_input_analyzer_skill(self, output_template):
@@ -192,6 +217,11 @@ class BrainAgent(BaseModel):
 		self, chat_id: UUID, input: BrainAgentInput
 	) -> GetChatHistoryOutput:
 		"""Generate an answer to a question"""
+		conversation_buffer_memory = Thread(
+			chat_id=chat_id,
+		)
+		self.brain_skill.conversation_buffer_memory = conversation_buffer_memory
+
 		agent = Agent(
 			skills=LinearSkillSet(
 				skills=[self.brain_skill],
@@ -201,15 +231,16 @@ class BrainAgent(BaseModel):
 				self.runtime_name: self.runtime,
 			}
 		)
-		transformed_history = chat_service.format_chat_history(
-			chat_service.get_enrich_chat_history(chat_id))
+
 		verified_input = dict(input)
-		verified_input["chat_history"] = transformed_history
+
 		verified_input_df = pd.DataFrame([verified_input])
+
 		prediction = InternalDataFrame_encoder(
 			agent.run(verified_input_df, self.runtime_name)
 		)[0]
-		answer = " ".join([prediction[template["name"]] for template in self.brain_skill.output_template])
+		# answer = " ".join([prediction[template["name"]] for template in self.brain_skill.output_template])
+		answer = prediction["output"]
 		new_chat = chat_service.update_chat_history(
 			CreateChatHistory(
 				**{
