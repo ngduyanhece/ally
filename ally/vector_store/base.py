@@ -8,7 +8,7 @@ from ally.utils.internal_data import InternalDataFrame
 
 
 class AllyVectorStore(BaseModel):
-  	
+		
 	class Config:
 		arbitrary_types_allowed = True
 	
@@ -22,7 +22,6 @@ class AllyVectorStore(BaseModel):
 		self,
 		record,
 		input_fields: list[str],
-		output_field: str,
 	) -> Dict[str, Any]:
 		"""Processes a single record using input and output fields.
 
@@ -41,21 +40,22 @@ class AllyVectorStore(BaseModel):
 		input_data = " ".join([str(
 			record[input_field]) for input_field in input_fields])
 		docs = self.vector_store.similarity_search(input_data)
-		record[output_field] = " ".join([doc.page_content for doc in docs])
+		# append docs in each input field
+		for input_field in input_fields:
+				record[input_field] = record[input_field] + f"""this is the related contents:  {docs}"""
+
 		return record
-	
+
 	def batch_to_batch(
 		self,
 		batch: InternalDataFrame,
 		input_fields: list[str],
-		output_field: str,
 	) -> InternalDataFrame:
 		output = batch.progress_apply(
 				self._process_record,
 				axis=1,
 				result_type='expand',
 				input_fields=input_fields,
-				output_field=output_field,
 		)
 		return output
 		

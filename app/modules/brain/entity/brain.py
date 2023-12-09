@@ -85,3 +85,12 @@ class UpdateBrainProperties(BaseModel):
 	description: Optional[str]
 	status: Optional[str]
 	prompt_id: Optional[UUID]
+
+class BrainToolEntity(BaseModel):
+	id: UUID
+	name: Optional[str]
+	tool_kwargs: Optional[dict]
+
+class BrainToolkitEntity(BaseModel):
+	id: UUID
+	name: Optional[str]

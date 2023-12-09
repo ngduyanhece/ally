@@ -49,6 +49,11 @@ async def create_brain_input_handler(
 		return {"call_id": call.object_id}
 	except HTTPException as e:
 		raise e
+	# brain_agent = BrainAgent(
+	# 	brain_details=brain_details
+	# )
+	# answer = brain_agent.generate_answer(chat_id=chat_id, input=input)
+	# return answer
 
 @agent_router.post(
 	"/agent/learn/{chat_id}",

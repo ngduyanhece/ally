@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Dict, List, TypeVar
 
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts.chat import ChatPromptTemplate
 from langchain.prompts.prompt import PromptTemplate
 from langchain.schema import (BaseOutputParser, BasePromptTemplate,
@@ -19,7 +20,7 @@ Above, the Completion did not satisfy the constraints given in the Prompt.
 Details: {error}
 Please try again and do not include any special characters that may cause errors when parsing with json or yaml."""
 NAIVE_RETRY_WITH_ERROR_PROMPT = PromptTemplate.from_template(
-    NAIVE_COMPLETION_RETRY_WITH_ERROR
+		NAIVE_COMPLETION_RETRY_WITH_ERROR
 )
 
 class RetryWithErrorOutputParser(BaseOutputParser[T]):
@@ -100,3 +101,21 @@ class RetryWithErrorOutputParser(BaseOutputParser[T]):
 		@property
 		def _type(self) -> str:
 				return "retry_with_error"
+
+def get_output_parser(
+	self, output_template: List[Dict]) -> StructuredOutputParser:
+	"""Generate the output of the agent from the output templates
+
+	Args:
+		output_templates (List[Dict]): List of output templates 
+		in form of dict {"name": "name", "description": "description"}
+
+	Returns:
+		the structure output parser
+	"""
+	response_schemas = []
+	for template in output_template:
+		response_schemas.append(ResponseSchema(**template))
+	parser = StructuredOutputParser.from_response_schemas(response_schemas)
+	format_instructions = parser.get_format_instructions()
+	return parser, format_instructions

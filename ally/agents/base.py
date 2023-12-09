@@ -81,28 +81,7 @@ class Agent(BaseModel, ABC):
 			return LinearSkillSet(skills=[v])
 		else:
 			raise ValueError(f"skills must be of type SkillSet or Skill, not {type(v)}")
-	
-	# @model_validator(mode='after')
-	# def verify_input_parameters(self):
-	# 	"""
-	# 	Verifies that the input parameters are valid."""
 
-	# 	def _raise_default_runtime_error(val, runtime, runtimes, default_value):
-	# 		print_error(f"The Agent.{runtime} is set to {val}, "
-	# 			f"but this runtime is not available in the list: {list(runtimes)}. "
-	# 			f"Please choose one of the available runtimes and initialize the agent again, for example:\n\n"
-	# 			f"agent = Agent(..., {runtime}='{default_value}')\n\n"
-	# 			f"Make sure the default runtime is available in the list of runtimes. For example:\n\n"
-	# 			f"agent = Agent(..., runtimes={{'{default_value}': OpenAIRuntime(model='gpt-4')}})\n\n")
-	# 		raise ValueError(f"default runtime {val} not found in provided runtimes.")
-
-	# 	if self.default_runtime not in self.runtimes:
-	# 		_raise_default_runtime_error(self.default_runtime, 'default_runtime', self.runtimes, 'openai')
-		# if self.default_teacher_runtime not in self.teacher_runtimes:
-		# 	_raise_default_runtime_error(self.default_teacher_runtime, 'default_teacher_runtime', self.teacher_runtimes,
-		# 																	'openai-gpt4')
-		# return self
-	
 	def get_runtime(self, runtime: Optional[str] = None) -> Runtime:
 		"""
 		Retrieves the specified runtime or the default runtime if none is specified.
@@ -247,8 +226,6 @@ class Agent(BaseModel, ABC):
 			# TODO: iterating over skill can be more complex, and we should take order into account
 			for skill_output, skill_name in self.skills.get_skill_outputs().items():
 				skill = self.skills[skill_name]
-				if skill.frozen:
-						continue
 				print_text(
 					f'Skill output to improve: "{skill_output}" (Skill="{skill_name}")\n'
 					f"Accuracy = {accuracy[skill_output] * 100:0.2f}%",
@@ -262,10 +239,9 @@ class Agent(BaseModel, ABC):
 					highlight_differences(old_instructions, skill.instruction_template)
 				else:
 					print_text(skill.instruction_template, style="bold green")
+					print_text(skill.format_instructions, style="bold green")
 
 				if skill_name == first_skill_with_errors:
 						break
 
 			print_text("Train is done!")
-
-			

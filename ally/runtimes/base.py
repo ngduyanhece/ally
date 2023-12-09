@@ -1,18 +1,19 @@
 import enum
 from typing import Any, Dict, List, Optional
 
+from langchain.agents import AgentExecutor, AgentType, Tool, initialize_agent
 from langchain.chains.llm import LLMChain
 from langchain.llms.base import BaseLLM
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
-from langchain.prompts.chat import (ChatPromptTemplate,
-                                    HumanMessagePromptTemplate,
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts.chat import (HumanMessagePromptTemplate,
                                     SystemMessagePromptTemplate)
+from langchain.tools.base import BaseTool
 from pydantic import BaseModel
 from tqdm import tqdm
 
 from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_text
-from ally.utils.retry_parser import RetryWithErrorOutputParser
 
 tqdm.pandas()
 	
@@ -27,7 +28,7 @@ class Runtime(BaseModel):
 	Class representing an LLM runtime environment.
 
 	Attributes:
-		llm_runtime_type (LLMRuntimeModelType): Type of the LLM runtime. Defaults to OpenAI.
+		verbose (bool): Whether to print verbose logs. Defaults to False.
 		llm_params (Dict[str, str]): Parameters for the LLM runtime.
 	"""
 	verbose: bool = False
@@ -38,68 +39,7 @@ class Runtime(BaseModel):
 
 	class Config:
 		arbitrary_types_allowed = True
-	
-	def _create_chain(self):
-		# if self.llm_runtime_model_type.value == RuntimeModelType.OpenAI.value:
-		# 	self._llm = ChatOpenAI(
-		# 		**self.llm_params
-		# 	)
-		# elif self.llm_runtime_model_type.value == RuntimeModelType.Transformers.value:
-		# 	self._llm = HuggingFacePipeline(
-		# 		**self.llm_params
-		# 	)
-		# else:
-		# 	raise NotImplementedError(f'LLM runtime type {self.llm_runtime_model_type} is not implemented.')
-		# self._chain = LLMChain(
-		# 	llm=self._llm,
-		# 	prompt=self._llm_prompt_template,
-		# )
-		pass
-	
-	def _process_record(
-		self,
-		record,
-		chain,
-		output_parser=None,
-	) -> Dict[str, Any]:
-		"""
-		Processes a single record using langchain chain
-		 Args:
-			record (dict or InternalDataFrame): The record to be processed.
-			chain (callable): The langchain chain for processing.
-			output_parser: the output parser
-			outputs (list of str, optional): Specific output fields to extract from the result.
-
-		Returns:
-			dict: Processed output for the record.
-		"""
-		if not isinstance(record, dict):
-			record = record.to_dict()
-		else:
-			record = record.copy()
-		verified_input = record
-		# exclude guidance parameter from input
-		if self.verbose:
-			print_text(str(verified_input))
-		result = chain.run(
-				verified_input
-		)
-		# TODO fix the output parser later
-		if output_parser is None:
-			verified_output = {'output': str(result)}
-		else:
-			try:
-				verified_output = output_parser.parse(result)
-			except Exception as e:
-				try:
-					retry_parser = RetryWithErrorOutputParser.from_llm(
-						parser=output_parser, llm=self._llm, max_retries=1)
-					verified_output = retry_parser.parse_with_chat_prompt_template(
-						result, self._llm_prompt_template, verified_input)
-				except Exception as e:
-						verified_output = {'output': str(result)}
-		return verified_output
-	
+			
 	def get_input_prompt(self, input_template: str) -> HumanMessagePromptTemplate:
 		"""Generates an input prompt from the provided template.
 
@@ -110,24 +50,6 @@ class Runtime(BaseModel):
 			HumanMessagePromptTemplate: a prompt template for the human message that input to the agent
 		"""
 		return HumanMessagePromptTemplate.from_template(input_template)
-	
-	def get_output_parser(
-			self, output_template: List[Dict]) -> StructuredOutputParser:
-		"""Generate the output of the agent from the output templates
-
-		Args:
-			output_templates (List[Dict]): List of output templates 
-			in form of dict {"name": "name", "description": "description"}
-
-		Returns:
-			the structure output parser
-		"""
-		response_schemas = []
-		for template in output_template:
-			response_schemas.append(ResponseSchema(**template))
-		parser = StructuredOutputParser.from_response_schemas(response_schemas)
-		format_instructions = parser.get_format_instructions()
-		return parser, format_instructions
 				
 	def get_instruction_prompt(
 			self, instruction_template) -> SystemMessagePromptTemplate:
@@ -137,82 +59,219 @@ class Runtime(BaseModel):
 			instructions_template (str): Template to generate the instruction prompt
 
 		Returns:
-			SystemMessagePromptTemplate: template to instruct the agent 
+			SystemMessagePromptTemplate: template to instruct the agent
 		"""
-		return SystemMessagePromptTemplate.from_template(
-			instruction_template + "\n{format_instructions}")
+		return SystemMessagePromptTemplate.from_template(instruction_template)
 	
-	def _prepare_chain_and_params(
-			self, input_template, output_template, instruction_template):
-		output_parser, format_instructions = self.get_output_parser(output_template)
+	def _create_chain(self):
+		"""
+		Create the chain for the the runtime
+		This will be defined clearly for each type of runtime
+		"""
+		pass
+	
+	def _prepare_default_llm_tool(
+			self, input_template, instruction_template):
+		"""
+			Prepare the default tool for the agent
+			Args:
+				input_template (str): Template for human message input prompt
+				instructions (str): InstrListuctions for the system message prompt
+			Returns:
+				the chain
+		"""
 		input_prompt = self.get_input_prompt(input_template)
 		instruction_prompt = self.get_instruction_prompt(
 			instruction_template)
 		self._llm_prompt_template = ChatPromptTemplate(
 			messages=[
 				input_prompt, instruction_prompt
-			],
-			partial_variables={"format_instructions": format_instructions}
+			]
 		)
 		self._create_chain()
-		return self._chain, output_parser
+		return self._chain
+	
+	def _prepare_agent_and_tools(
+		self,
+		input_template: str,
+		instruction_template: str,
+		default_llm_function_name: str,
+		default_llm_function_description: str,
+		prefix: str,
+		format_instructions: str,
+		conversation_buffer_memory: ConversationBufferMemory = None,
+		tools: List[BaseTool] = [],
+	) -> AgentExecutor:
+		"""
+			Prepare the agent and tools for the runtime
+			Args:
+				input_template (str): Template for human message input prompt
+				instructions (str): Instructions for the system message prompt
+				default_llm_function_name (str): The default function name
+				default_llm_function_description (str): The description for the default function
+				prefix (str): The prefix for the agent
+				format_instructions (str): The format instructions for the agent
+				tools (list[Tool]): The list of tools for the agent
+			Returns:
+				the agent executor
+		"""
+		default_llm_tool = self._prepare_default_llm_tool(
+			input_template, instruction_template
+		)
+
+		default_tool = Tool.from_function(
+			func=default_llm_tool.run,
+			name=default_llm_function_name,
+			description=default_llm_function_description,
+			# return_direct=True,
+		)
+		prefix = prefix + "You have access to the following tools:\n"
+		if conversation_buffer_memory is not None:
+			suffix = "Begin {chat_history}!\n" + input_template + "Thought:{agent_scratchpad}"
+		else:
+			suffix = "Begin!\n" + input_template + "Thought:{agent_scratchpad}"
+		if conversation_buffer_memory is not None:
+			agent_executor = initialize_agent(
+				tools=[default_tool] + tools,
+				llm=self._llm,
+				agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+				agent_kwargs={
+					"prefix": prefix,
+					"format_instructions": format_instructions,
+					"extra_prompt_messages": [
+						MessagesPlaceholder(variable_name="chat_history")],
+					"suffix": suffix
+				},
+				memory=conversation_buffer_memory,
+				handle_parsing_errors=True,
+				trim_intermediate_steps=-1,
+				return_intermediate_steps=self.verbose,
+				early_stopping_method="force",
+			)
+		else:
+			agent_executor = initialize_agent(
+				tools=[default_tool] + tools,
+				llm=self._llm,
+				agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+				agent_kwargs={
+					"prefix": prefix,
+					"format_instructions": format_instructions,
+					"extra_prompt_messages": [MessagesPlaceholder(variable_name="chat_history")],
+					"suffix": suffix
+				},
+				handle_parsing_errors=True,
+				trim_intermediate_steps=-1,
+				return_intermediate_steps=self.verbose,
+				early_stopping_method="force",
+			)
+		return agent_executor
+	
+	def _process_record(
+		self,
+		record,
+		agent_executor
+	) -> Dict[str, Any]:
+		"""
+		Processes a single record using langchain chain
+			Args:
+			record (dict or InternalDataFrame): The record to be processed.
+			agent_executor (callable): The langchain agent executor for processing.
+		Returns:
+			dict: Processed output for the record.
+		"""
+		if not isinstance(record, dict):
+			record = record.to_dict()
+		else:
+			record = record.copy()
+		verified_input = record
+		if self.verbose:
+			print_text(str(verified_input))
+		result = agent_executor.invoke(
+				verified_input
+		)
+		# print_text("agent result is")
+		# print(result)
+		return result
 
 	def record_to_record(
 		self,
 		record: Dict[str, Any],
 		input_template: str,
-		output_template: Optional[str] = None,
-		instruction_template: Optional[str] = None,
+		instruction_template: str,
+		default_llm_function_name: str,
+		default_llm_function_description: str,
+		prefix: str,
+		format_instructions: str,
+		conversation_buffer_memory: ConversationBufferMemory,
+		tools: Optional[List[BaseTool]] = [],
 	) -> Dict[str, Any]:
 		"""Processes a record using the provided templates and instructions.
-
-		Args:
-			record (Dict[str, Any]): The record data to be processed.
-			input_template (str): Template for human message input prompt
-			output_template (str): Template for output parser
-			instructions (str): Instructions for the system message prompt
-		Returns:
-				Dict[str, Any]: The processed record.
+		 Args:
+			record (Dict[str, str]): The record to process.
+			input_template (str): Template for input processing.
+			instruction_template (str): Template for instruction
+			default_llm_function_name (str): The default function name
+			default_llm_function_description (str): The description for the default function
+			prefix (str): The prefix for the agent
+			format_instructions (str): The format instructions for the agent
+			tools (list[Tool]): The list of tools for the agent
 		"""
-		# TODO will fix the output template later
-		chain, output_parser = self._prepare_chain_and_params(
-			input_template, output_template, instruction_template)
-		output = self._process_record(
-			record=record,
-			chain=chain,
-			output_parser=output_parser,
+		agent_executor = self._prepare_agent_and_tools(
+			input_template,
+			instruction_template,
+			default_llm_function_name,
+			default_llm_function_description,
+			prefix,
+			format_instructions,
+			conversation_buffer_memory,
+			tools
 		)
+		output = self._process_record(record, agent_executor)
 		return output
 	
 	def batch_to_batch(
 		self,
 		batch: InternalDataFrame,
 		input_template: str,
-		output_template: Optional[List[Dict]] = None,
-		instruction_template: Optional[str] = None,
+		instruction_template: str,
+		default_llm_function_name: str,
+		default_llm_function_description: str,
+		prefix: str,
+		format_instructions: str,
+		conversation_buffer_memory: ConversationBufferMemory,
+		tools: Optional[List[BaseTool]] = [],
 	) -> InternalDataFrame:
 		"""Processes a batch of records using the provided templates 
 		and instructions.
 
 		Args:
-				batch (InternalDataFrame): The batch of records to be processed.
-				input_template (str): Template for input processing.
-				output_template (str): Template for output processing.
-				instructions (str): Instructions for guidance.
-				during batch processing.
-
+			batch (InternalDataFrame): The batch of records to be processed.
+			input_template (str): Template for input processing.
+			instruction_template (str): Template for instruction
+			default_llm_function_name (str): The default function name
+			default_llm_function_description (str): The description for the default function
+			prefix (str): The prefix for the agent
+			format_instructions (str): The format instructions for the agent
+			tools (list[Tool]): The list of tools for the agent
 		Returns:
 				InternalDataFrame: The processed batch of records.
 		"""
-		# TODO will fix the output template later		
-		chain, output_parser = self._prepare_chain_and_params(
-			input_template, output_template, instruction_template)
+		agent_executor = self._prepare_agent_and_tools(
+			input_template,
+			instruction_template,
+			default_llm_function_name,
+			default_llm_function_description,
+			prefix,
+			format_instructions,
+			conversation_buffer_memory,
+			tools
+		)
+
 		output = batch.progress_apply(
-				self._process_record,
-				axis=1,
-				result_type='expand',
-				chain=chain,
-				output_parser=output_parser,
+			self._process_record,
+			axis=1,
+			result_type='expand',
+			agent_executor=agent_executor,
 		)
 		return output
 
@@ -220,8 +279,12 @@ class Runtime(BaseModel):
 		self,
 		record: Dict[str, Any],
 		input_template: str,
-		output_template: Optional[List[Dict]] = None,
-		instruction_template: Optional[str] = None,
+		instruction_template: str,
+		default_llm_function_name: str,
+		default_llm_function_description: str,
+		prefix: str,
+		format_instructions: str,
+		tools: Optional[List[BaseTool]] = [],
 		output_batch_size: int = 1
 	) -> InternalDataFrame:
 		"""
@@ -229,20 +292,28 @@ class Runtime(BaseModel):
 
 			Args:
 				record (Dict[str, str]): The record to process.
-				input_template (str): The input template.
-				instructions_template (str): The instructions template.
-				output_template (str): The output template.
-				instruction_template (str): The instruction template.
+				input_template (str): Template for input processing.
+				instruction_template (str): Template for instruction
+				default_llm_function_name (str): The default function name
+				default_llm_function_description (str): The description for the default function
+				prefix (str): The prefix for the agent
+				format_instructions (str): The format instructions for the agent
+				tools (list[Tool]): The list of tools for the agent
 				output_batch_size (int): The batch size for the output. Defaults to 1..
 			Returns:
 				InternalDataFrame: The processed batch.
 		"""
 		batch = InternalDataFrame([record] * output_batch_size)
+
 		return self.batch_to_batch(
 			batch=batch,
 			input_template=input_template,
-			output_template=output_template,
 			instruction_template=instruction_template,
+			default_llm_function_name=default_llm_function_name,
+			default_llm_function_description=default_llm_function_description,
+			prefix=prefix,
+			format_instructions=format_instructions,
+			tools=tools,
 		)
 
 			 
