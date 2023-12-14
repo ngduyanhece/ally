@@ -2,6 +2,8 @@
 from typing import Optional
 
 from langchain.callbacks.manager import CallbackManagerForToolRun
+from langchain.chat_models import ChatOpenAI
+from langchain.schema.messages import HumanMessage, SystemMessage
 from langchain.tools.base import BaseTool
 from supabase.client import Client
 
@@ -33,7 +35,7 @@ class QueryShopInfoByShopNameTool(FoodallyBaseTool, BaseTool):
 		# get all shop_name from  shop_info table
 		shop_name_list = self.db.from_('shop_info').select('shop_name').execute().data
 		# filter the shop_name with pattern
-		shop_name_list = [shop_name['shop_name'] for shop_name in shop_name_list if _fuzzy_match(pattern, shop_name['shop_name'], 0.2)][:10]
+		shop_name_list = [shop_name['shop_name'] for shop_name in shop_name_list if _fuzzy_match(pattern, shop_name['shop_name'], 0.6)][:10]
 		# get all shop_info with shop_name in shop_name_list
 		shop_info_list = self.db.from_('shop_info').select('*').in_('shop_name', shop_name_list).execute().data
 		return shop_info_list
@@ -81,3 +83,56 @@ class QueryItemInfoByShopNameTool(FoodallyBaseTool, BaseTool):
 		shop_name_ids_list = [shop_name_id['shop_id'] for shop_name_id in shop_name_ids]
 		food_and_drink_info_list = self.db.from_('item').select('*').in_('shop_id', shop_name_ids_list).execute().data
 		return food_and_drink_info_list
+
+
+class FoodallyNLBaseTool(BaseTool):
+	"""
+	Base tool for Foodally NL tools.
+	"""
+	openai_api_key: str = None
+	model_name: str = None
+
+
+query_shop_info_prompt = r"""
+please summarize the information about the shop, including some of the following information:
+- shop name
+- shop address
+- shop kind
+- shop rating
+- shop open time
+- total review
+you will receive a related context to proceed your task 
+context:
+
+"""
+
+class QueryShopInfoNL(FoodallyNLBaseTool, BaseTool):
+	"""Tool to query shop info using natural language."""
+	name: str = 'query_shop_info by shop_name'
+	description: str = """
+	This tool use LLMs to get details information about the shops that users are 
+	interested in. this tool will accept one parameter: context. the context is
+	the question and the related information retried from the vector database 
+	and previous conversation. the language used for this tool is Vietnamese
+	"""
+
+	def _run(
+		self,
+		context: str,
+		run_manager: Optional[CallbackManagerForToolRun] = None,
+	):
+		"""Run the tool."""
+		model = ChatOpenAI(
+			model_name=self.model_name,
+			openai_api_key=self.openai_api_key,
+			temperature=0.9,
+			max_tokens=512,
+		)
+		prompt = query_shop_info_prompt
+		messages = [
+			SystemMessage(content=query_shop_info_prompt),
+			HumanMessage(context=context),
+		]
+
+		query_res = model.invoke(messages).content
+		return query_res

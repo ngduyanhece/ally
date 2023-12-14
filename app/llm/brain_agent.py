@@ -105,6 +105,7 @@ class BrainAgent(BaseModel):
 			raise NotImplementedError
 		if brain_runtime.type == RuntimeType.OpenAi:
 			target_runtime = OpenAIRuntime(
+				verbose=True,
 				gpt_model_name=brain_runtime.model,
 				max_tokens=brain_runtime.max_tokens,
 				temperature=brain_runtime.temperature,

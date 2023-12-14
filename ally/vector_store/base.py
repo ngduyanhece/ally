@@ -42,7 +42,7 @@ class AllyVectorStore(BaseModel):
 		docs = self.vector_store.similarity_search(input_data)
 		# append docs in each input field
 		for input_field in input_fields:
-				record[input_field] = record[input_field] + f"""this is the related contents:  {docs}"""
+				record[input_field] = record[input_field] + f""" this is the related contents:  {docs}"""
 
 		return record
 
