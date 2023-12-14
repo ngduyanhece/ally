@@ -29,7 +29,8 @@ image = modal.Image.debian_slim(
 	"newspaper3k",
 	"langchain==0.0.346",
 	"langchain-core==0.0.10",
-	"google-api-python-client==2.110.0"
+	"google-api-python-client==2.110.0",
+	"thefuzz"
 )
 
 stub = modal.Stub(

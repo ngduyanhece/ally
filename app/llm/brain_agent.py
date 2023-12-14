@@ -1,8 +1,9 @@
-from typing import ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, Tuple
 from uuid import UUID
 
 import pandas as pd
 from langchain.memory import ConversationBufferMemory
+from langchain.memory.utils import get_prompt_input_key
 from langchain.schema import Document
 from pydantic import BaseModel
 from supabase.client import Client, create_client
@@ -14,6 +15,7 @@ from ally.runtimes.openai import OpenAIRuntime
 from ally.skills.base import RetrievalSkill, Skill, TransformSkill
 from ally.skills.skillset import LinearSkillSet
 from ally.utils.internal_data import InternalDataFrame_encoder
+from ally.utils.logs import print_text
 from ally.vector_store.base import AllyVectorStore
 from app.core.settings import settings
 from app.llm.utils.retrieval_input_template_from_a_prompt import \
@@ -46,6 +48,24 @@ class Thread(ConversationBufferMemory):
 	memory_key: str = "chat_history"
 	chat_id: UUID
 	
+	def _get_input_output(
+		self, inputs: Dict[str, Any], outputs: [Dict[str, str]]
+	) -> Tuple[str, str]:
+		if self.input_key is None:
+				prompt_input_key = get_prompt_input_key(inputs, self.memory_variables)
+		else:
+				prompt_input_key = self.input_key
+		
+		if len(outputs) != 1:
+			output_key = " ".join(outputs.keys())
+			print_text(outputs)
+			outputs[output_key] = outputs['output'] + "\n" + " ".join(
+				[agent_action[0].log for agent_action in outputs['intermediate_steps']])
+		else:
+			output_key = list(outputs.keys())[0]
+
+		return inputs[prompt_input_key], outputs[output_key]
+		
 	def buffer_as_str(self) -> str:
 		transformed_history = chat_service.format_chat_history(
 			chat_service.get_enrich_chat_history(self.chat_id))
@@ -105,6 +125,7 @@ class BrainAgent(BaseModel):
 			raise NotImplementedError
 		if brain_runtime.type == RuntimeType.OpenAi:
 			target_runtime = OpenAIRuntime(
+				verbose=True,
 				gpt_model_name=brain_runtime.model,
 				max_tokens=brain_runtime.max_tokens,
 				temperature=brain_runtime.temperature,
@@ -139,6 +160,7 @@ class BrainAgent(BaseModel):
 			instruction_template=prompt.content,
 			vector_store=vector_store,
 			query_input_fields=[template.name for template in prompt.input_template],
+			k=10,
 			tool_names=tool_names,
 			tool_kwargs=tool_kwargs,
 			tool_kit_names=toolkits_name

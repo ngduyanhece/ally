@@ -38,7 +38,7 @@ class ChatService:
 			return self.repository.delete_chat(chat_id)
 	
 	def get_enrich_chat_history(
-		self, chat_id: str, n_last_history=1) -> list[GetChatHistoryOutput]:
+		self, chat_id: str, n_last_history=2) -> list[GetChatHistoryOutput]:
 		history: list[dict] = self.repository.get_chat_history(chat_id)[-n_last_history:]
 		if history is None:
 			return []

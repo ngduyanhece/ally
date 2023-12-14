@@ -22,7 +22,10 @@ Action Input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
-Final Answer: the final answer to the original input question"""
+Final Answer: the final answer to the original input question
+please reply the final answer in vietnamese language
+the answer should be contain as much information as possible
+"""
 
 
 class Skill(BaseModel, ABC):
@@ -314,6 +317,7 @@ class RetrievalSkill(TransformSkill):
 	input_template: str
 	vector_store: AllyVectorStore
 	query_input_fields: List[str]
+	k: int = 1
 
 	def apply(
 		self,
@@ -324,6 +328,7 @@ class RetrievalSkill(TransformSkill):
 		input = self.vector_store.batch_to_batch(
 			input,
 			input_fields=self.query_input_fields,
+			k=self.k,
 		)
 		if len(self.tool_names) > 0:
 			tools = load_tools(self.tool_names, **self.tool_kwargs)

@@ -22,6 +22,7 @@ class AllyVectorStore(BaseModel):
 		self,
 		record,
 		input_fields: list[str],
+		k: int,
 	) -> Dict[str, Any]:
 		"""Processes a single record using input and output fields.
 
@@ -39,23 +40,30 @@ class AllyVectorStore(BaseModel):
 			record = record.copy()
 		input_data = " ".join([str(
 			record[input_field]) for input_field in input_fields])
-		docs = self.vector_store.similarity_search(input_data)
-		# append docs in each input field
-		for input_field in input_fields:
-				record[input_field] = record[input_field] + f"""this is the related contents:  {docs}"""
+		docs = self.vector_store.similarity_search(query=input_data, k=k)
 
+		# append docs in each input field
+		context = "\n".join([doc.page_content for doc in docs])
+		
+		for input_field in input_fields:
+			record[input_field] = record[input_field] + \
+				f""" this is the related content that you can use to support for your answer:
+				{context}
+				"""
 		return record
 
 	def batch_to_batch(
 		self,
 		batch: InternalDataFrame,
 		input_fields: list[str],
+		k: int,
 	) -> InternalDataFrame:
 		output = batch.progress_apply(
 				self._process_record,
 				axis=1,
 				result_type='expand',
 				input_fields=input_fields,
+				k=k
 		)
 		return output
 		
