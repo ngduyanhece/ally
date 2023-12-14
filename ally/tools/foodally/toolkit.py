@@ -4,9 +4,10 @@ from langchain.agents.agent_toolkits.base import BaseToolkit
 from langchain.tools import BaseTool
 from supabase.client import Client
 
-from ally.tools.foodally.tool import (QueryItemInfoByShopNameTool,
+from ally.tools.foodally.tool import (EntityResolution, EstimatePrice,
+                                      OderFood, QueryItemInfoByShopNameTool,
                                       QueryShopInfoByShopNameTool,
-                                      QueryShopInfoNL, ShopInfoOrderByRating)
+                                      RecommendShopByRating)
 
 
 class FoodallyToolkit(BaseToolkit):
@@ -24,12 +25,14 @@ class FoodallyToolkit(BaseToolkit):
 	def get_tools(self) -> List[BaseTool]:
 		"""Get the tools in the toolkit."""
 		query_shop_info_by_shop_name_tool = QueryShopInfoByShopNameTool(db=self.db)
-		query_shop_info_order_by_rating = ShopInfoOrderByRating(db=self.db)
+		recommend_shop_by_rating = RecommendShopByRating(db=self.db)
 		query_item_info_by_shop_name = QueryItemInfoByShopNameTool(db=self.db)
+		# query_shop_info_by_item = QueryShopInfoByItemTool(db=self.db)
 		return [
 			query_shop_info_by_shop_name_tool,
-			query_shop_info_order_by_rating,
-			query_item_info_by_shop_name
+			recommend_shop_by_rating,
+			query_item_info_by_shop_name,
+			# query_shop_info_by_item
 		]
 
 class FoodallyNLToolkit(BaseToolkit):
@@ -47,10 +50,20 @@ class FoodallyNLToolkit(BaseToolkit):
 
 	def get_tools(self) -> List[BaseTool]:
 		"""Get the tools in the toolkit."""
-		query_shop_info_nl = QueryShopInfoNL(
+		estimate_price = EstimatePrice(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		entity_resolution = EntityResolution(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		order_food = OderFood(
 			openai_api_key=self.openai_api_key,
 			model_name=self.model_name
 		)
 		return [
-			query_shop_info_nl
+			estimate_price,
+			entity_resolution,
+			order_food
 		]
