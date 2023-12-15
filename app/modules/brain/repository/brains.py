@@ -404,6 +404,29 @@ class Brains(BrainsInterface):
 				)
 		return toolkits
 	
+	def create_assistant_for_brain(self, brain_id: UUID, assistant_id: str):
+		response = (
+			self.db.from_("brains_assistants")
+			.insert(
+				{
+					"brain_id": str(brain_id),
+					"assistant_id": assistant_id,
+				}
+			).execute()
+		)
+	
+	def get_assistant_form_brain(self, brain_id: UUID) -> str | None:
+		response = (
+			self.db.from_("brains_assistants")
+			.select("assistant_id")
+			.filter("brain_id", "eq", brain_id)
+			.execute()
+		)
+		if len(response.data) == 0:
+			return None
+		return response.data[0]["assistant_id"]
+
+	
 
 	
 

@@ -7,7 +7,7 @@ from app.logger import get_logger
 from app.models.settings import get_supabase_client
 from app.modules.chat.entity.chat import (Chat, ChatHistory, CreateChatHistory,
                                           CreateChatProperties,
-                                          GetChatHistoryOutput)
+                                          GetChatHistoryOutput, Thread)
 from app.modules.chat.repository.chats import Chats
 
 logger = get_logger(__name__)
@@ -90,5 +90,11 @@ class ChatService:
 	
 	def get_message_by_id(self, message_id: str) -> ChatHistory:
 		return self.repository.get_message_by_id(message_id)
+	
+	def create_thread_for_chat(self, chat_id: str, thread_id: str) -> Thread:
+		return self.repository.create_thread_for_chat(chat_id, thread_id)
+	
+	def get_thread_for_chat(self, chat_id: str) -> Thread:
+		return self.repository.get_thread_for_chat(chat_id)
 	
 	

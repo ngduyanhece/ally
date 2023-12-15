@@ -4,8 +4,9 @@ from langchain.agents.agent_toolkits.base import BaseToolkit
 from langchain.tools import BaseTool
 from supabase.client import Client
 
-from ally.tools.foodally.tool import (EntityResolution, EstimatePrice,
-                                      OderFood, QueryItemInfoByShopNameTool,
+from ally.tools.foodally.tool import (EstimatePrice, MakeOrder,
+                                      QueryItemInfoByShopNameTool,
+                                      QueryShopInfoByItemTool,
                                       QueryShopInfoByShopNameTool,
                                       RecommendShopByRating)
 
@@ -27,12 +28,12 @@ class FoodallyToolkit(BaseToolkit):
 		query_shop_info_by_shop_name_tool = QueryShopInfoByShopNameTool(db=self.db)
 		recommend_shop_by_rating = RecommendShopByRating(db=self.db)
 		query_item_info_by_shop_name = QueryItemInfoByShopNameTool(db=self.db)
-		# query_shop_info_by_item = QueryShopInfoByItemTool(db=self.db)
+		query_shop_info_by_item = QueryShopInfoByItemTool(db=self.db)
 		return [
 			query_shop_info_by_shop_name_tool,
 			recommend_shop_by_rating,
 			query_item_info_by_shop_name,
-			# query_shop_info_by_item
+			query_shop_info_by_item,
 		]
 
 class FoodallyNLToolkit(BaseToolkit):
@@ -42,7 +43,7 @@ class FoodallyNLToolkit(BaseToolkit):
 	not do this in production.
 	"""
 	openai_api_key: str = "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"
-	model_name: str = "gpt-3.5-turbo"
+	model_name: str = "gpt-3.5-turbo-1106"
 
 	class Config:
 		"""Configuration for this pydantic object."""
@@ -54,16 +55,11 @@ class FoodallyNLToolkit(BaseToolkit):
 			openai_api_key=self.openai_api_key,
 			model_name=self.model_name
 		)
-		entity_resolution = EntityResolution(
-			openai_api_key=self.openai_api_key,
-			model_name=self.model_name
-		)
-		order_food = OderFood(
+		make_order = MakeOrder(
 			openai_api_key=self.openai_api_key,
 			model_name=self.model_name
 		)
 		return [
 			estimate_price,
-			entity_resolution,
-			order_food
+			make_order
 		]

@@ -2,6 +2,7 @@ import enum
 from typing import Any, Dict, List, Optional
 
 from langchain.agents import AgentExecutor, AgentType, Tool, initialize_agent
+from langchain.agents.load_tools import load_tools
 from langchain.chains.llm import LLMChain
 from langchain.llms.base import BaseLLM
 from langchain.memory import ConversationBufferMemory
@@ -12,11 +13,25 @@ from langchain.tools.base import BaseTool
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from ally.tools.load_tools import load_tool_kit
 from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_text
 
 tqdm.pandas()
 	
+
+class SkillEntity(BaseModel):
+	name: str
+	description: str
+	input_template: str
+	instruction_template: str
+	prefix: Optional[str] = ""
+	assistant_id: Optional[str] = ""
+	format_instructions: Optional[str] = ""
+	conversation_buffer_memory: Optional[ConversationBufferMemory] = None
+	tool_names: Optional[List[str]] = []
+	tool_kit_names: Optional[List[str]] = []
+	tool_kwargs: Optional[dict] = {}
 	
 class RuntimeModelType(enum.Enum):
 	"""Enumeration for LLM runtime model types."""
@@ -36,6 +51,7 @@ class Runtime(BaseModel):
 	_llm: BaseLLM
 	_chain: LLMChain
 	_llm_prompt_template: str
+	agent_executor: AgentExecutor = None
 
 	class Config:
 		arbitrary_types_allowed = True
@@ -165,6 +181,30 @@ class Runtime(BaseModel):
 				early_stopping_method="force",
 			)
 		return agent_executor
+
+	def agent_up(
+		self,
+		skill: SkillEntity
+	) -> AgentExecutor:
+		print_text("initializing new agent")
+		if len(skill.tool_names) > 0:
+			tools = load_tools(skill.tool_names, **skill.tool_kwargs)
+		else:
+			tools = []
+		if len(skill.tool_kit_names) > 0:
+			tools_from_tool_kits = [load_tool_kit(tool_kit_name) for tool_kit_name in skill.tool_kit_names]
+			tools_from_tool_kits = [tool for tool_list in tools_from_tool_kits for tool in tool_list]
+			tools.extend(tools_from_tool_kits)
+		self.agent_executor = self._prepare_agent_and_tools(
+			skill.input_template,
+			skill.instruction_template,
+			skill.name,
+			skill.description,
+			skill.prefix,
+			skill.format_instructions,
+			skill.conversation_buffer_memory,
+			tools
+		)
 	
 	def _process_record(
 		self,
@@ -196,14 +236,6 @@ class Runtime(BaseModel):
 	def record_to_record(
 		self,
 		record: Dict[str, Any],
-		input_template: str,
-		instruction_template: str,
-		default_llm_function_name: str,
-		default_llm_function_description: str,
-		prefix: str,
-		format_instructions: str,
-		conversation_buffer_memory: ConversationBufferMemory,
-		tools: Optional[List[BaseTool]] = [],
 	) -> Dict[str, Any]:
 		"""Processes a record using the provided templates and instructions.
 		 Args:
@@ -216,30 +248,12 @@ class Runtime(BaseModel):
 			format_instructions (str): The format instructions for the agent
 			tools (list[Tool]): The list of tools for the agent
 		"""
-		agent_executor = self._prepare_agent_and_tools(
-			input_template,
-			instruction_template,
-			default_llm_function_name,
-			default_llm_function_description,
-			prefix,
-			format_instructions,
-			conversation_buffer_memory,
-			tools
-		)
-		output = self._process_record(record, agent_executor)
+		output = self._process_record(record, self.agent_executor)
 		return output
 	
 	def batch_to_batch(
 		self,
 		batch: InternalDataFrame,
-		input_template: str,
-		instruction_template: str,
-		default_llm_function_name: str,
-		default_llm_function_description: str,
-		prefix: str,
-		format_instructions: str,
-		conversation_buffer_memory: ConversationBufferMemory,
-		tools: Optional[List[BaseTool]] = [],
 	) -> InternalDataFrame:
 		"""Processes a batch of records using the provided templates 
 		and instructions.
@@ -256,35 +270,18 @@ class Runtime(BaseModel):
 		Returns:
 				InternalDataFrame: The processed batch of records.
 		"""
-		agent_executor = self._prepare_agent_and_tools(
-			input_template,
-			instruction_template,
-			default_llm_function_name,
-			default_llm_function_description,
-			prefix,
-			format_instructions,
-			conversation_buffer_memory,
-			tools
-		)
 
 		output = batch.progress_apply(
 			self._process_record,
 			axis=1,
 			result_type='expand',
-			agent_executor=agent_executor,
+			agent_executor=self.agent_executor,
 		)
 		return output
 
 	def record_to_batch(
 		self,
 		record: Dict[str, Any],
-		input_template: str,
-		instruction_template: str,
-		default_llm_function_name: str,
-		default_llm_function_description: str,
-		prefix: str,
-		format_instructions: str,
-		tools: Optional[List[BaseTool]] = [],
 		output_batch_size: int = 1
 	) -> InternalDataFrame:
 		"""
@@ -307,13 +304,6 @@ class Runtime(BaseModel):
 
 		return self.batch_to_batch(
 			batch=batch,
-			input_template=input_template,
-			instruction_template=instruction_template,
-			default_llm_function_name=default_llm_function_name,
-			default_llm_function_description=default_llm_function_description,
-			prefix=prefix,
-			format_instructions=format_instructions,
-			tools=tools,
 		)
 
 			 

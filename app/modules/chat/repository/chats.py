@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from app.modules.chat.entity.chat import (Chat, ChatHistory, CreateChatHistory,
-                                          CreateChatProperties)
+                                          CreateChatProperties, Thread)
 from app.modules.chat.repository.chats_interface import ChatsInterface
 
 
@@ -118,3 +118,27 @@ class Chats(ChatsInterface):
 
 	def delete_chat_history(self, chat_id):
 			self.db.table("chat_history").delete().match({"chat_id": chat_id}).execute()
+		
+	def get_thread_for_chat(self, chat_id) -> Thread:
+		response = (
+			self.db.from_("threads")
+			.select("*")
+			.filter("chat_id", "eq", chat_id)
+			.execute()
+		)
+		if len(response.data) == 0:
+			return None
+		return Thread(**response.data[0])
+	
+	def create_thread_for_chat(self, chat_id, thread_id) -> Thread:
+		response = (
+			self.db.from_("threads")
+			.insert(
+				{
+					"chat_id": chat_id,
+					"thread_id": thread_id,
+				}
+			)
+			.execute()
+		)
+		return Thread(**response.data[0])
