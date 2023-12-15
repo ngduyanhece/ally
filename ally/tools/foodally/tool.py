@@ -190,12 +190,13 @@ class EstimatePrice(FoodallyNLBaseTool, BaseTool):
 class MakeOrderInput(BaseModel):
   	content: str = Field(
 			description="""the information of the order including the 
-			name of the food or drink, the quantity of the food or drink, price
+			name of the food and drink, the quantity of the food and drink,
 			and the name of the shop
 			the name of user who created the order
 			the phone number of the user who created the order
 			the address of the user who created the order
 			the language used for this tool is Vietnamese
+			the price should be get from the chat history
 			"""
 		)
 
@@ -220,7 +221,8 @@ class MakeOrder(FoodallyNLBaseTool, BaseTool):
 		<name>
 		<phone number>
 		<address>
-		please ask the user to provide the all information if the information is not provided
+		please ask the user to provide the item name, item quantity, name, phone number and address if they are not provided
+		the price should be get from the chat history
 
 		the given content:
 		"""
