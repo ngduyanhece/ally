@@ -135,3 +135,9 @@ class BrainService:
 	
 	def get_toolkits_from_brain(self, brain_id: UUID):
 		return self.repository.get_toolkits_from_brain(brain_id)
+	
+	def create_assistant_for_brain(self, brain_id: UUID, assistant_id: str):
+		return self.repository.create_assistant_for_brain(brain_id, assistant_id)
+	
+	def get_assistant_form_brain(self, brain_id: UUID) -> str | None:
+		return self.repository.get_assistant_form_brain(brain_id)

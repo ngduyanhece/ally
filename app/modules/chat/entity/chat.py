@@ -21,6 +21,12 @@ class Chat(BaseModel):
 	creation_time: str
 	chat_name: str
 
+class Thread(BaseModel):
+	id: str
+	chat_id: str
+	thread_id: str
+	creation_time: str
+	
 class ChatHistory(BaseModel):
 	chat_id: str
 	message_id: str

@@ -3,12 +3,10 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from langchain.agents.load_tools import load_tools
 from langchain.memory import ConversationBufferMemory
 from pydantic import BaseModel
 
 from ally.runtimes.base import Runtime
-from ally.tools.load_tools import load_tool_kit
 from ally.utils.internal_data import InternalDataFrame
 from ally.utils.logs import print_text
 from ally.vector_store.base import AllyVectorStore
@@ -50,6 +48,7 @@ class Skill(BaseModel, ABC):
 		Answer the following questions as best you can if you cannot answer the question
 		please use the only tool you have access to
 	"""
+	assistant_id: Optional[str] = None
 	format_instructions: str = FORMAT_INSTRUCTIONS
 	conversation_buffer_memory: Optional[ConversationBufferMemory] = None
 	tool_names: Optional[List[str]] = []
@@ -82,25 +81,8 @@ class TransformSkill(Skill):
 		Returns:
 			InternalDataFrame: The transformed data.
 		"""
-		if len(self.tool_names) > 0:
-			tools = load_tools(self.tool_names, **self.tool_kwargs)
-		else:
-			tools = []
-		if len(self.tool_kit_names) > 0:
-			tools_from_tool_kits = [load_tool_kit(tool_kit_name) for tool_kit_name in self.tool_kit_names]
-			tools_from_tool_kits = [tool for tool_list in tools_from_tool_kits for tool in tool_list]
-			tools.extend(tools_from_tool_kits)
-
 		return runtime.batch_to_batch(
 			batch=input,
-			input_template=self.input_template,
-			instruction_template=self.instruction_template,
-			default_llm_function_name=self.name,
-			default_llm_function_description=self.description,
-			prefix=self.prefix,
-			format_instructions=self.format_instructions,
-			conversation_buffer_memory=self.conversation_buffer_memory,
-			tools=tools
 		)
 	
 	def improve(
@@ -330,23 +312,6 @@ class RetrievalSkill(TransformSkill):
 			input_fields=self.query_input_fields,
 			k=self.k,
 		)
-		if len(self.tool_names) > 0:
-			tools = load_tools(self.tool_names, **self.tool_kwargs)
-		else:
-			tools = []
-		if len(self.tool_kit_names) > 0:
-			tools_from_tool_kits = [load_tool_kit(tool_kit_name) for tool_kit_name in self.tool_kit_names]
-			tools_from_tool_kits = [tool for tool_list in tools_from_tool_kits for tool in tool_list]
-			tools.extend(tools_from_tool_kits)
-
 		return runtime.batch_to_batch(
 			batch=input,
-			input_template=self.input_template,
-			instruction_template=self.instruction_template,
-			default_llm_function_name=self.name,
-			default_llm_function_description=self.description,
-			prefix=self.prefix,
-			format_instructions=self.format_instructions,
-			conversation_buffer_memory=self.conversation_buffer_memory,
-			tools=tools
 		)

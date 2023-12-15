@@ -1,9 +1,7 @@
-from typing import Any, ClassVar, Dict, Optional, Tuple
+from typing import ClassVar, Optional
 from uuid import UUID
 
 import pandas as pd
-from langchain.memory import ConversationBufferMemory
-from langchain.memory.utils import get_prompt_input_key
 from langchain.schema import Document
 from pydantic import BaseModel
 from supabase.client import Client, create_client
@@ -11,11 +9,10 @@ from supabase.client import Client, create_client
 from ally.agents.base import Agent
 from ally.environments.base import Environment, StaticEnvironment
 from ally.runtimes.base import Runtime
-from ally.runtimes.openai import OpenAIRuntime
+from ally.runtimes.openai import OpenAIAssistantRuntime
 from ally.skills.base import RetrievalSkill, Skill, TransformSkill
 from ally.skills.skillset import LinearSkillSet
 from ally.utils.internal_data import InternalDataFrame_encoder
-from ally.utils.logs import print_text
 from ally.vector_store.base import AllyVectorStore
 from app.core.settings import settings
 from app.llm.utils.retrieval_input_template_from_a_prompt import \
@@ -44,33 +41,33 @@ file_service = FileService()
 test_data_service = TestDataService()
 
 
-class Thread(ConversationBufferMemory):
-	memory_key: str = "chat_history"
-	chat_id: UUID
+# class Thread(ConversationBufferMemory):
+# 	memory_key: str = "chat_history"
+# 	chat_id: UUID
 	
-	def _get_input_output(
-		self, inputs: Dict[str, Any], outputs: [Dict[str, str]]
-	) -> Tuple[str, str]:
-		if self.input_key is None:
-				prompt_input_key = get_prompt_input_key(inputs, self.memory_variables)
-		else:
-				prompt_input_key = self.input_key
+# 	def _get_input_output(
+# 		self, inputs: Dict[str, Any], outputs: [Dict[str, str]]
+# 	) -> Tuple[str, str]:
+# 		if self.input_key is None:
+# 				prompt_input_key = get_prompt_input_key(inputs, self.memory_variables)
+# 		else:
+# 				prompt_input_key = self.input_key
 		
-		if len(outputs) != 1:
-			output_key = " ".join(outputs.keys())
-			print_text(outputs)
-			outputs[output_key] = outputs['output'] + "\n" + " ".join(
-				[agent_action[0].log for agent_action in outputs['intermediate_steps']])
-		else:
-			output_key = list(outputs.keys())[0]
+# 		if len(outputs) != 1:
+# 			output_key = " ".join(outputs.keys())
+# 			print_text(outputs)
+# 			outputs[output_key] = outputs['output'] + "\n" + " ".join(
+# 				[agent_action[0].log for agent_action in outputs['intermediate_steps']])
+# 		else:
+# 			output_key = list(outputs.keys())[0]
 
-		return inputs[prompt_input_key], outputs[output_key]
+# 		return inputs[prompt_input_key], outputs[output_key]
 		
-	def buffer_as_str(self) -> str:
-		transformed_history = chat_service.format_chat_history(
-			chat_service.get_enrich_chat_history(self.chat_id))
-		return transformed_history
-  		
+# 	def buffer_as_str(self) -> str:
+# 		transformed_history = chat_service.format_chat_history(
+# 			chat_service.get_enrich_chat_history(self.chat_id))
+# 		return transformed_history
+			
 
 class BrainAgent(BaseModel):
 	"""
@@ -97,6 +94,7 @@ class BrainAgent(BaseModel):
 	runtime_name: str = None
 	teacher_runtime_name: str = None
 	environment: Environment = None
+	agent: Agent = None
 
 	def _create_supabase_client(self) -> Client:
 		return create_client(
@@ -116,7 +114,7 @@ class BrainAgent(BaseModel):
 	def _get_prompt_to_use(self) -> Prompt:
 		return prompt_service.get_prompt_by_id(self.brain_details.prompt_id)
 	
-	def _create_runtime(self, runtime_type: str = 'student') -> Dict[str, Runtime]:
+	def _create_runtime(self, runtime_type: str = 'student'):
 		if runtime_type == 'student':
 			brain_runtime = self.brain_details.runtime
 		elif runtime_type == 'teacher':
@@ -124,7 +122,7 @@ class BrainAgent(BaseModel):
 		else:
 			raise NotImplementedError
 		if brain_runtime.type == RuntimeType.OpenAi:
-			target_runtime = OpenAIRuntime(
+			target_runtime = OpenAIAssistantRuntime(
 				verbose=True,
 				gpt_model_name=brain_runtime.model,
 				max_tokens=brain_runtime.max_tokens,
@@ -153,14 +151,16 @@ class BrainAgent(BaseModel):
 			self.brain_details.id)
 		toolkits_name = [toolkit.name for toolkit in brain_toolkits]
 
+		assistant_id = brain_service.get_assistant_form_brain(self.brain_details.id)
 		return RetrievalSkill(
 			name=self.brain_details.name,
 			description=self.brain_details.description,
 			input_template=input_template,
 			instruction_template=prompt.content,
+			assistant_id=assistant_id,
 			vector_store=vector_store,
-			query_input_fields=[template.name for template in prompt.input_template],
-			k=10,
+			query_input_fields=["content"],
+			k=5,
 			tool_names=tool_names,
 			tool_kwargs=tool_kwargs,
 			tool_kit_names=toolkits_name
@@ -231,20 +231,15 @@ class BrainAgent(BaseModel):
 		self.vector_store = self._create_vector_store(
 			self.runtime.get_embeddings())
 		self.brain_skill = self._create_brain_skill(self.prompt, self.vector_store)
+		self.runtime.agent_up(self.brain_skill)
+		if self.brain_skill.assistant_id is None:
+			brain_service.create_assistant_for_brain(
+				self.brain_details.id, self.runtime.assistant_id)
+			
 		self.input_analyzer_skill = self._create_input_analyzer_skill(
 			output_template=[dict(template) for template in self.prompt.input_template]
 		)
-		
-	def generate_answer(
-		self, chat_id: UUID, input: BrainAgentInput
-	) -> GetChatHistoryOutput:
-		"""Generate an answer to a question"""
-		conversation_buffer_memory = Thread(
-			chat_id=chat_id,
-		)
-		self.brain_skill.conversation_buffer_memory = conversation_buffer_memory
-
-		agent = Agent(
+		self.agent = Agent(
 			skills=LinearSkillSet(
 				skills=[self.brain_skill],
 				skill_sequence=[self.brain_skill.name]
@@ -253,16 +248,37 @@ class BrainAgent(BaseModel):
 				self.runtime_name: self.runtime,
 			}
 		)
+		
+	def generate_answer(
+		self, chat_id: UUID, input: BrainAgentInput
+	) -> GetChatHistoryOutput:
+		"""Generate an answer to a question"""
+		
+		thread = chat_service.get_thread_for_chat(chat_id)
 
-		verified_input = dict(input)
+		if thread is None:
+			verified_input = {
+				"content": input.text_input
+			}
+		else:
+			verified_input = {
+				"content": input.text_input,
+				"thread_id": thread.thread_id
+			}
 
 		verified_input_df = pd.DataFrame([verified_input])
-
+		
 		prediction = InternalDataFrame_encoder(
-			agent.run(verified_input_df, self.runtime_name)
+			self.agent.run(verified_input_df, self.runtime_name)
 		)[0]
-		# answer = " ".join([prediction[template["name"]] for template in self.brain_skill.output_template])
 		answer = prediction["output"]
+		# check if the chat_id does not have a thread, create a thread for it
+		thread = chat_service.get_thread_for_chat(chat_id)
+		if thread is None:
+			chat_service.create_thread_for_chat(
+				chat_id=str(chat_id),
+				thread_id=prediction["thread_id"],
+			)
 		new_chat = chat_service.update_chat_history(
 			CreateChatHistory(
 				**{
