@@ -217,18 +217,15 @@ class MakeOrder(FoodallyNLBaseTool, BaseTool):
 	):
 		"""Run the tool."""
 		query_shop_info_prompt = r"""
-		please calculate the total price of the following items included in the content:
-		and inform the user about the total price of the order following the format:
-		<items><counts><total price>
+		please calculate the total price from the content and chat history.
+		you will inform the total price to the user after calculating the total price
 		then please make and confirm the order base on the given content in format:
 		<item name>:<item quantity>
 		<name>
 		<phone number>
 		<address>
-		please ask the user to provide the item name, item quantity, name, phone number and address if they are not provided
-		please calculate the total price from the content and chat history.
-		you will inform the total price to the user after calculating the total price
-		the given content:
+		please ask the user to provide the item name, item quantity, name, phone number and address if they are not provided:
+		alway calculate the total price after the user provide the item name and item quantity then inform the user the total price
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
