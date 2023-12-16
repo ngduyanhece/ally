@@ -13,7 +13,7 @@ def load_tool_kit(
 	tool_kit_name: str,
 ) -> List[BaseTool]:
 	"""load the tool from tool_kit by tool_kit_name"""
-	return __TOOL_KITS[tool_kit_name].get_stools()
+	return __TOOL_KITS[tool_kit_name].get_tools()
 
 def _get_foodally_toolkit() -> BaseToolkit:
 	supabase_client = get_foodally_client()
