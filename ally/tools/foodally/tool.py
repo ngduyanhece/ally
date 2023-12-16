@@ -376,8 +376,10 @@ class PhoMenuInfo(FoodallyNLBaseTool, BaseTool):
 		tô lớn: là tô phở có số lượng bánh và nhân nhiều thích hợp với người lớn có sức ăn nhiều
 		tô nhỏ: là tô phở có số lượng bánh phở và nhân ít phù hợp với trẻ em 
 		You goal is to pursuade people to order phở so alway encourage them to make order 
-		please reply the menu of the pho shop in vietnamese language:
+		the reply format should should be in markdown format so that the user can see the image of the menu, 
+		alway include the image of the menu in the reply
 		remember to ask user to make order after replying the information of the pho shop
+		please use polite and friendly language in vietnamese
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
@@ -430,6 +432,7 @@ class MakePhoOrder(FoodallyNLBaseTool, BaseTool):
 		<address>
 		please ask the user to provide the item name, item quantity, note of item, name, phone number and address if they are not provided:
 		user can use slangs to make order such as Tổng tiền bao nhiêu, TT đi ( tính tiền đi)
+		please use polite and friendly language in vietnamese
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
@@ -503,7 +506,8 @@ class CrossSale(FoodallyNLBaseTool, BaseTool):
 	"""Tool to query shop info using natural language."""
 	name: str = 'cross_sale'
 	description: str = """
-	This tool is make and confirm order for user
+	This tool is to cross sale to the user after they make an order
+	alway use this tool after user make an order
 	"""
 	args_schema: Type[BaseModel] = CrossSaleInput
 
