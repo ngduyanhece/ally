@@ -217,7 +217,10 @@ class MakeOrder(FoodallyNLBaseTool, BaseTool):
 	):
 		"""Run the tool."""
 		query_shop_info_prompt = r"""
-		please make and confirm the order base on the given content in format:
+		please calculate the total price of the following items included in the content:
+		and inform the user about the total price of the order following the format:
+		<items><counts><total price>
+		then please make and confirm the order base on the given content in format:
 		<item name>:<item quantity>
 		<name>
 		<phone number>
