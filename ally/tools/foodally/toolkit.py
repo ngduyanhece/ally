@@ -43,7 +43,7 @@ class FoodallyNLToolkit(BaseToolkit):
 	not do this in production.
 	"""
 	openai_api_key: str = "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"
-	model_name: str = "gpt-3.5-turbo-1106"
+	model_name: str = "gpt-4-1106-preview"
 
 	class Config:
 		"""Configuration for this pydantic object."""

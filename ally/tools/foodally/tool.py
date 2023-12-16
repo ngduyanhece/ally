@@ -96,7 +96,7 @@ class QueryItemInfoByShopNameTool(FoodallyBaseTool, BaseTool):
 		# filter the shop_name with pattern
 		shop_name_list = [
 			shop_name['shop_name'] for shop_name in shop_name_list if fuzz.ratio(
-				shop_name_pattern, shop_name['shop_name']) > 50]
+				shop_name_pattern, shop_name['shop_name']) > 40]
 		# get food and drink info from shop with id of shop in shop_name_list
 		food_and_drink_info_list = self.db.from_('items').select('*').in_(
 			'shop_name', shop_name_list).execute().data
@@ -178,7 +178,7 @@ class EstimatePrice(FoodallyNLBaseTool, BaseTool):
 			model_name=self.model_name,
 			openai_api_key=self.openai_api_key,
 			temperature=0.9,
-			max_tokens=256,
+			max_tokens=512,
 		)
 		messages = [
 			SystemMessage(content=query_shop_info_prompt),
@@ -244,74 +244,5 @@ class MakeOrder(FoodallyNLBaseTool, BaseTool):
 		query_res = model.invoke(messages).content
 		return query_res
 
-# class EntityResolution(FoodallyNLBaseTool, BaseTool):
-# 	"""Tool to resolve entities in natural language. for example, resolve this in sentence"""
-# 	name: str = 'resolve_entities'
-# 	description: str = """
-# 	This tool is used to resolve entities in natural language. it is used when model can 
-# 	not detect the entities in the sentence
-# 	this tool accept one parameter: memory.
-# 	memory is the memory of the conversation between the agent and the user
-# 	"""
 
-# 	def _run(
-# 		self,
-# 		memory: str,
-# 		run_manager: Optional[CallbackManagerForToolRun] = None,
-# 	):
-# 		"""Run the tool."""
-# 		resolute_entities_prompt = r"""
-# 		please resolve the entities in the following sentence:
-# 		please reply in vietnamese language
-# 		content:
-# 		"""
-# 		model = ChatOpenAI(
-# 			model_name=self.model_name,
-# 			openai_api_key=self.openai_api_key,
-# 			temperature=0.9,
-# 			max_tokens=256,
-# 		)
-# 		messages = [
-# 			SystemMessage(content=resolute_entities_prompt),
-# 			HumanMessage(content=memory),
-# 		]
 
-# 		query_res = model.invoke(messages).content
-# 		return query_res
-
-# class OderFood(FoodallyNLBaseTool, BaseTool):
-# 	"""Tool to order food."""
-# 	name: str = 'order_food'
-# 	description: str = """
-# 	This tool is used to order food
-# 	this tool accept one parameter: memory.
-# 	memory is the memory of the conversation between the agent and the user
-# 	and the input from the user in case user does not mention the name of the shop
-# 	"""
-
-# 	def _run(
-# 		self,
-# 		memory: str,
-# 		run_manager: Optional[CallbackManagerForToolRun] = None,
-# 	):
-# 		"""Run the tool."""
-# 		order_food_prompt = r"""
-# 		please create a order for the following items
-# 		you reply should be in the following format:
-# 		<item name>:<item quantity>
-# 		<total price>
-# 		This is the items:
-# 		"""
-# 		model = ChatOpenAI(
-# 			model_name=self.model_name,
-# 			openai_api_key=self.openai_api_key,
-# 			temperature=0.9,
-# 			max_tokens=256,
-# 		)
-# 		messages = [
-# 			SystemMessage(content=order_food_prompt),
-# 			HumanMessage(content=memory),
-# 		]
-
-# 		query_res = model.invoke(messages).content
-# 		return query_res
