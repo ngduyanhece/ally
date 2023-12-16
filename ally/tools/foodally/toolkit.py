@@ -4,7 +4,8 @@ from langchain.agents.agent_toolkits.base import BaseToolkit
 from langchain.tools import BaseTool
 from supabase.client import Client
 
-from ally.tools.foodally.tool import (EstimatePrice, MakeOrder,
+from ally.tools.foodally.tool import (CrossSale, EstimatePrice, HandleComplain,
+                                      MakeOrder, MakePhoOrder, PhoMenuInfo,
                                       QueryItemInfoByShopNameTool,
                                       QueryShopInfoByItemTool,
                                       QueryShopInfoByShopNameTool,
@@ -63,3 +64,43 @@ class FoodallyNLToolkit(BaseToolkit):
 			estimate_price,
 			make_order
 		]
+
+class PhoallyNLToolKit(BaseToolkit):
+	"""Toolkit for phoally agents.
+	This is just a tool for demo and testing purposes so we put the key directly here.
+	It is a extremely bad practice to put the key directly in the code and you should
+	not do this in production.
+	"""
+	openai_api_key: str = "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"
+	model_name: str = "gpt-4-1106-preview"
+
+	class Config:
+		"""Configuration for this pydantic object."""
+		arbitrary_types_allowed = True
+
+	def get_tools(self) -> List[BaseTool]:
+		"""Get the tools in the toolkit."""
+		pho_menu_info = PhoMenuInfo(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		make_pho_order = MakePhoOrder(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		handle_complain = HandleComplain(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		cross_sale = CrossSale(
+			openai_api_key=self.openai_api_key,
+			model_name=self.model_name
+		)
+		return [
+			pho_menu_info,
+			make_pho_order,
+			handle_complain,
+			cross_sale
+		]
+
+
