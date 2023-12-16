@@ -15,17 +15,19 @@ image = modal.Image.debian_slim(
 		python_version="3.11"
 ).pip_install(
 	"fastapi==0.103.2",
-	"langchain==0.0.325",
 	"pydantic==2.4.2",
 	"pydantic-settings==2.0.3",
 	"supabase==1.1.1",
 	"asyncpg==0.28.0",
 	"python-multipart==0.0.6",
-	"openai==0.28.1",
+	"openai==1.3.9",
 	"PyMuPDF==1.23.4",
 	"tiktoken==0.5.1",
 	"tqdm==4.66.1",
 	"pandas==2.1.2",
+	"langchain==0.0.350",
+	"langchain-core==0.1.1",
+	"langchain_community==0.0.3",
 	"newspaper3k",
 	"beautifulsoup4"
 )

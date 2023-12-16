@@ -20,15 +20,16 @@ image = modal.Image.debian_slim(
 	"supabase==1.1.1",
 	"asyncpg==0.28.0",
 	"python-multipart==0.0.6",
-	"openai==0.28.1",
+	"openai==1.3.9",
 	"PyMuPDF==1.23.4",
 	"tiktoken==0.5.1",
 	"tqdm==4.66.1",
 	"pandas==2.1.2",
 	"beautifulsoup4",
 	"newspaper3k",
-	"langchain==0.0.346",
-	"langchain-core==0.0.10",
+	"langchain==0.0.350",
+	"langchain-core==0.1.1",
+	"langchain_community==0.0.3",
 	"google-api-python-client==2.110.0",
 	"thefuzz"
 )
@@ -44,7 +45,8 @@ stub = modal.Stub(
 @stub.function(
 	image=image,
 	retries=3,
-	container_idle_timeout=50
+	container_idle_timeout=50,
+	secret=modal.Secret.from_name("openai-secret")
 )
 def single_agent_chat(
 	chat_id: UUID,
