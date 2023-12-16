@@ -297,7 +297,7 @@ class PhoMenuInfo(FoodallyNLBaseTool, BaseTool):
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 999+ lần 
 		*price:Tô lớn 55,000đ - Tô nhỏ 40,000đ
-		*image: 
+		*image_link:: 
 		https://images.foody.vn/res/g98/976895/s120x120/7abc5ccb-ccfb-48f1-a117-ec740784-22be2def-201217195638.jpeg
 
 
@@ -305,72 +305,67 @@ class PhoMenuInfo(FoodallyNLBaseTool, BaseTool):
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 999+ lần 
 		*price: 10,000đ 1 trứng
-		*image: https://images.foody.vn/res/g98/976895/s120x120/45a2585b-c15d-48cd-8473-a41fdaa6-f6aaa537-201217195708.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/45a2585b-c15d-48cd-8473-a41fdaa6-f6aaa537-201217195708.jpeg)
 
 		+ Phở Nạm Bò
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 999+ lần 
 		*price:Tô lớn 55,000đ - Tô nhỏ 40,000đ
-		*image: 
-		https://images.foody.vn/res/g98/976895/s120x120/fcb71c4c-96d3-4594-a730-6df6a56c-57a721a6-201217195957.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/fcb71c4c-96d3-4594-a730-6df6a56c-57a721a6-201217195957.jpeg_
 
 		+ Phở Gân Bò
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 999+ lần 
 		*price:Tô lớn 55,000đ - Tô nhỏ 40,000đ
-		*image: 
-		https://images.foody.vn/res/g98/976895/s120x120/e2155770-cc9c-4ce9-a601-871cb5be-8da9201a-201217195251.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/e2155770-cc9c-4ce9-a601-871cb5be-8da9201a-201217195251.jpeg)
 
 		+ Phở Sốt Vang
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 999+ lần 
 		*price:Tô lớn 65,000đ - Tô nhỏ 45,000đ
-		*image: https://images.foody.vn/res/g98/976895/s120x120/c1bfeaaa-6b0b-4b53-ae2e-d58c7b1e-88a494e0-201217195551.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/c1bfeaaa-6b0b-4b53-ae2e-d58c7b1e-88a494e0-201217195551.jpeg)
 
 		+Phở Tái Lăn Đặc Biệt
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price:: Tô lớn 120,000đ - Tô nhỏ 80,000đ
-		*image: https://images.foody.vn/res/g98/976895/s120x120/f49e86bd-b76e-43e0-9282-30dc7bb9-b3b07e72-201217195625.jpeg
+		*image_link:(https://images.foody.vn/res/g98/976895/s120x120/f49e86bd-b76e-43e0-9282-30dc7bb9-b3b07e72-201217195625.jpeg)
 
 		+Phở Lòng Bò
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price:: Tô lớn 120,000đ - Tô nhỏ 80,000đ
-		*image: https://images.foody.vn/res/g98/976895/s120x120/f0d6c7d0-6257-4583-9fdd-efb57750-cf0f109d-201217195535.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/f0d6c7d0-6257-4583-9fdd-efb57750-cf0f109d-201217195535.jpeg)
 
 		+Gân bò 
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price: 55,000đ cho 1 phần 
-		*image: https://images.foody.vn/res/g98/976895/s120x120/50da3f71-4b35-46a9-94bd-ba48699e-85a8f3d2-201015231147.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/50da3f71-4b35-46a9-94bd-ba48699e-85a8f3d2-201015231147.jpeg)
 
 		+Phở nạm sườn 
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price: Tô lớn 134,000đ - Tô nhỏ 90,000 đ
-		*image: 
-		https://images.foody.vn/res/g98/976895/s120x120/96752553-d1cc-4f23-98fe-9127ef02-333a3e20-210123180920.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/96752553-d1cc-4f23-98fe-9127ef02-333a3e20-210123180920.jpeg)
 
 		+Phở sườn bò đại hàn  
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price: Tô lớn 134,000đ - Tô nhỏ 90,000 đ
-		*image: 
-		https://images.foody.vn/res/g98/976895/s120x120/55c7e9cd-9559-4fc3-a455-20750adb-e6e0f6e3-210123180951.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/55c7e9cd-9559-4fc3-a455-20750adb-e6e0f6e3-210123180951.jpeg)
 
 		+Phở sườn cây đặc biệt  
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price: Tô lớn 134,000đ - Tô nhỏ 90,000 đ
-		*image: 
-		https://images.foody.vn/res/g98/976895/s120x120/2979ec9b-54d3-41b5-b628-87d6a8f9-fd55a2ef-230716113016.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/2979ec9b-54d3-41b5-b628-87d6a8f9-fd55a2ef-230716113016.jpeg)
 
 		+Chả giò rế 
 		*note: Đã bao gồm 5.000đ tiền hộp
 		*number of orders: Đã được đặt 500+ lần
 		*price: 5,000đ cho 5 cái 
-		*image: https://images.foody.vn/res/g98/976895/s120x120/6cbaa3bc-3c81-42e0-a154-b9e4e013-9b8b320a-210123180829.jpeg
+		*image_link: (https://images.foody.vn/res/g98/976895/s120x120/6cbaa3bc-3c81-42e0-a154-b9e4e013-9b8b320a-210123180829.jpeg)
 
 		*additional information 
 		tô lớn: là tô phở có số lượng bánh và nhân nhiều thích hợp với người lớn có sức ăn nhiều
@@ -379,7 +374,8 @@ class PhoMenuInfo(FoodallyNLBaseTool, BaseTool):
 		the reply format should should be in markdown format so that the user can see the image of the menu, 
 		alway include the image of the menu in the reply
 		remember to ask user to make order after replying the information of the pho shop
-		please use polite and friendly language in vietnamese
+
+		*please reply in  polite and friendly manner in vietnamese language 
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
@@ -432,7 +428,7 @@ class MakePhoOrder(FoodallyNLBaseTool, BaseTool):
 		<address>
 		please ask the user to provide the item name, item quantity, note of item, name, phone number and address if they are not provided:
 		user can use slangs to make order such as Tổng tiền bao nhiêu, TT đi ( tính tiền đi)
-		please use polite and friendly language in vietnamese
+		*please reply in polite and friendly manner in vietnamese language 
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
@@ -479,7 +475,7 @@ class HandleComplain(FoodallyNLBaseTool, BaseTool):
 		- price of petrol is high so the delivery fee is high
 		- the number of order is high so the order is slow
 		please give user discount code to comfort the user
-		please use polite and friendly language in vietnamese
+		please reply in polite and friendly manner in vietnamese language
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
@@ -626,7 +622,7 @@ class CrossSale(FoodallyNLBaseTool, BaseTool):
 		* order 2 pho get 1 free drink
 		* order 3 pho get 1 free drink and 1 free food
 
-		please use polite and friendly language in vietnamese
+		please replay in  polite and friendly manner in vietnamese
 		"""
 		model = ChatOpenAI(
 			model_name=self.model_name,
