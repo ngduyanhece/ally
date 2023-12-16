@@ -55,7 +55,9 @@ class RecommendShopByRating(FoodallyBaseTool, BaseTool):
 	name: str = 'recommend_shop_by_rating'
 	description: str = """
 	This tool is use to get top food shop by rating, this tool is
-	use when user want to be recommend a food shop
+	use when user want to be recommend a food shop.
+	this tool is the default tool of the agent if the agent do not have
+	any information to provide to the user, please use this tool instead
 	"""
 	args_schema: Type[BaseModel] = RecommendShopByRatingInput
 
@@ -217,13 +219,12 @@ class MakeOrder(FoodallyNLBaseTool, BaseTool):
 		query_shop_info_prompt = r"""
 		please make and confirm the order base on the given content in format:
 		<item name>:<item quantity>
-		<total price>
 		<name>
 		<phone number>
 		<address>
 		please ask the user to provide the item name, item quantity, name, phone number and address if they are not provided
-		the price should be get from the chat history
-
+		please calculate the total price from the content and chat history.
+		you will inform the total price to the user after calculating the total price
 		the given content:
 		"""
 		model = ChatOpenAI(
