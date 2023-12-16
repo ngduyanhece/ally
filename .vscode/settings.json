@@ -76,6 +76,7 @@
     "nonnull",
     "openai",
     "pbar",
+    "Phoally",
     "pydantic",
     "retcode",
     "runtimes",
