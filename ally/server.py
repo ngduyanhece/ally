@@ -11,5 +11,7 @@ logger = get_logger(__name__)
 
 config.run.headless = True
 config.run.watch = True
+config.run.host = "0.0.0.0"
+config.run.port = 5050
 
 app.include_router(router, prefix="")
