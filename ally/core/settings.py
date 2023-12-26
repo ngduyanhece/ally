@@ -11,7 +11,6 @@ class COREAPPSETTING(BaseSettings):
 	jwt_secret_key: str
 	crawl_depth: str
 	authenticate: bool
-	ci_test_api_key: str
 	
 
 settings = COREAPPSETTING(_env_file='.env', _env_file_encoding='utf-8')
