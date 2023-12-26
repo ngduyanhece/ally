@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   backend-core:
@@ -11,47 +11,5 @@ services:
     restart: always
     volumes:
       - ./:/code/
-    # depends_on:
-    #   - redis
-    #   - worker
     ports:
-      - 5050:5050
-    
-  # redis:
-  #   image: redis:latest
-  #   container_name: redis
-  #   restart: always
-  #   ports:
-  #     - 6379:6379
-  
-  # worker:
-  #   env_file:
-  #     - ./dev.env
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: worker
-  #   command: celery -A app.celery_worker worker -l info
-  #   restart: always
-  #   depends_on:
-  #     - redis
-  #   volumes:
-  #     - ./:/code/
-    
-    
-  # flower:
-  #   env_file:
-  #     - ./dev.env
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: flower
-  #   command: celery -A app.celery_worker flower -l info --port=5555
-  #   restart: always
-  #   volumes:
-  #     - ./:/code/
-  #   depends_on:
-  #     - redis
-  #     - worker
-  #   ports:
-  #     - 5555:5555
+      - 8000:8000
