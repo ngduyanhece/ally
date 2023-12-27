@@ -3,12 +3,11 @@ import asyncio
 from chainlit.config import DEFAULT_HOST
 
 from ally.middlewares.cors import add_cors_middleware
-from ally.server import app
+from ally.server import app, port
 
 if __name__ == "__main__":
   	
 	import uvicorn
-	port = 5050
 
 	add_cors_middleware(app)
 
