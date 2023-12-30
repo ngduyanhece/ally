@@ -1,8 +1,12 @@
 import jwt_decode from 'jwt-decode';
 import { useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { accessTokenState, threadHistoryState, userState } from 'src/state';
-import { IUser } from 'src/types';
+import {
+  accessTokenState,
+  conversationsHistoryState,
+  userState
+} from 'src/state';
+import { IAppUser } from 'src/types';
 import { getToken, removeToken, setToken } from 'src/utils/token';
 
 import { ChainlitAPI } from '..';
@@ -16,7 +20,7 @@ export const useAuth = (apiClient: ChainlitAPI) => {
     oauthProviders: string[];
   }>(apiClient, '/auth/config');
   const [accessToken, setAccessToken] = useRecoilState(accessTokenState);
-  const setThreadHistory = useSetRecoilState(threadHistoryState);
+  const setConversationsHistory = useSetRecoilState(conversationsHistoryState);
   const [user, setUser] = useRecoilState(userState);
 
   const isReady = !!(!isLoading && data);
@@ -25,7 +29,7 @@ export const useAuth = (apiClient: ChainlitAPI) => {
     setUser(null);
     removeToken();
     setAccessToken('');
-    setThreadHistory(undefined);
+    setConversationsHistory(undefined);
   };
 
   const saveAndSetToken = (token: string | null | undefined) => {
@@ -34,10 +38,10 @@ export const useAuth = (apiClient: ChainlitAPI) => {
       return;
     }
     try {
-      const { exp, ...User } = jwt_decode(token) as any;
+      const { exp, ...AppUser } = jwt_decode(token) as any;
       setToken(token);
       setAccessToken(`Bearer ${token}`);
-      setUser(User as IUser);
+      setUser(AppUser as IAppUser);
     } catch (e) {
       console.error(
         'Invalid token, clearing token from local storage',
@@ -62,6 +66,7 @@ export const useAuth = (apiClient: ChainlitAPI) => {
     return {
       data,
       user: null,
+      role: 'ANONYMOUS',
       isReady,
       isAuthenticated: true,
       accessToken: '',
@@ -73,6 +78,7 @@ export const useAuth = (apiClient: ChainlitAPI) => {
   return {
     data,
     user: user,
+    role: user?.role,
     isAuthenticated,
     isReady,
     accessToken: accessToken,

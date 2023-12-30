@@ -8,7 +8,7 @@ const getProviders = (playground: IPlayground) => {
   }
 
   let provider = providers.find(
-    (provider) => provider.id === playground.generation?.provider
+    (provider) => provider.id === playground.prompt?.provider
   );
 
   const providerFound = !!provider;

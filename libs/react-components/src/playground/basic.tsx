@@ -5,30 +5,27 @@ import { useContext } from 'react';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 
-import type { ICompletionGeneration } from 'client-types/';
+import type { IPrompt } from 'client-types/';
 
 import Completion from './editor/completion';
 import FormattedEditor from './editor/formatted';
 import TemplateEditor from './editor/template';
 
 interface Props {
-  generation: ICompletionGeneration;
+  prompt: IPrompt;
   hasTemplate: boolean;
   restoredTime: number;
 }
 
-export default function BasicPromptPlayground({
-  generation,
-  restoredTime
-}: Props) {
+export default function BasicPromptPlayground({ prompt, restoredTime }: Props) {
   const { promptMode, setPlayground } = useContext(PlaygroundContext);
 
   const onTemplateChange = (nextState: EditorState) => {
     const template = nextState.getCurrentContent().getPlainText();
     setPlayground((old) => ({
       ...old,
-      generation: {
-        ...old!.generation!,
+      prompt: {
+        ...old!.prompt!,
         template
       }
     }));
@@ -38,8 +35,8 @@ export default function BasicPromptPlayground({
     const formatted = nextState.getCurrentContent().getPlainText();
     setPlayground((old) => ({
       ...old,
-      generation: {
-        ...old!.generation!,
+      prompt: {
+        ...old!.prompt!,
         formatted
       }
     }));
@@ -49,32 +46,29 @@ export default function BasicPromptPlayground({
     return (
       <TemplateEditor
         showTitle={true}
-        template={generation.template || generation.formatted || ''}
-        inputs={generation.inputs}
-        format={generation.templateFormat}
+        template={prompt.template || prompt.formatted || ''}
+        prompt={prompt}
         onChange={onTemplateChange}
       />
     );
   };
 
   const renderFormatted = () => {
-    if (typeof generation.template === 'string') {
+    if (typeof prompt.template === 'string') {
       return (
         <FormattedEditor
           showTitle={true}
-          template={generation.template}
-          inputs={generation.inputs}
-          format={generation.templateFormat}
+          template={prompt.template}
+          prompt={prompt}
           readOnly
         />
       );
-    } else if (typeof generation.formatted === 'string') {
+    } else if (typeof prompt.formatted === 'string') {
       return (
         <FormattedEditor
           showTitle={true}
-          formatted={generation.formatted}
-          inputs={generation.inputs}
-          format={generation.templateFormat}
+          formatted={prompt.formatted}
+          prompt={prompt}
           readOnly={false}
           onChange={onFormattedChange}
         />
@@ -96,7 +90,7 @@ export default function BasicPromptPlayground({
     >
       {promptMode === 'Template' ? renderTemplate() : null}
       {promptMode === 'Formatted' ? renderFormatted() : null}
-      <Completion completion={generation.completion} />
+      <Completion completion={prompt.completion} />
     </Stack>
   );
 }

@@ -4,7 +4,6 @@ import { ErrorBoundary } from 'src/ErrorBoundary';
 import { useToggle } from 'usehooks-ts';
 
 import RestoreIcon from '@mui/icons-material/Restore';
-import { Chip } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -43,10 +42,10 @@ function _PromptPlayground() {
   const showToggleDrawerButton = isSmallScreen && !!playground?.providers;
 
   const restore = () => {
-    if (playground?.generation) {
+    if (playground?.prompt) {
       setPlayground((old?: IPlayground) => ({
         ...old,
-        generation: old?.originalGeneration
+        prompt: old?.originalPrompt
       }));
       setRestoredTime((old) => old + 1);
     }
@@ -55,32 +54,32 @@ function _PromptPlayground() {
   const handleClose = () => {
     setPlayground((old) => ({
       ...old,
-      generation: undefined,
-      originalGeneration: undefined
+      prompt: undefined,
+      originalPrompt: undefined
     }));
   };
 
-  const generation = playground?.generation;
+  const prompt = playground?.prompt;
 
-  const isChat = generation?.type === 'CHAT';
+  const isChat = !!playground?.originalPrompt?.messages?.length;
 
-  const hasTemplate = isChat
-    ? !!generation?.messages?.find((m) => typeof m.template === 'string')
-    : typeof generation?.template === 'string';
+  const hasTemplate = prompt?.messages
+    ? !!prompt.messages.find((m) => typeof m.template === 'string')
+    : typeof prompt?.template === 'string';
 
   useEffect(() => {
-    if (generation && !hasTemplate && promptMode === 'Template') {
+    if (prompt && !hasTemplate && promptMode === 'Template') {
       setPromptMode('Formatted');
     }
-  }, [generation, promptMode, setPromptMode]);
+  }, [prompt, promptMode, setPromptMode]);
 
-  if (!generation) {
+  if (!prompt) {
     return null;
   }
 
   return (
     <Dialog
-      open={!!generation}
+      open={!!prompt}
       fullScreen
       PaperProps={{
         style: {
@@ -120,13 +119,13 @@ function _PromptPlayground() {
                   ref={chatPromptScrollRef}
                   restoredTime={restoredTime}
                   hasTemplate={hasTemplate}
-                  generation={generation}
+                  prompt={prompt}
                 />
               ) : (
                 <BasicPromptPlayground
                   restoredTime={restoredTime}
                   hasTemplate={hasTemplate}
-                  generation={generation}
+                  prompt={prompt}
                 />
               )}
             </Stack>
@@ -140,9 +139,6 @@ function _PromptPlayground() {
       </DialogContent>
 
       <ActionBar>
-        {generation.tokenCount ? (
-          <Chip label={`${generation.tokenCount} tokens`} />
-        ) : null}
         <Tooltip title="Restore original">
           <IconButton onClick={restore}>
             <RestoreIcon />

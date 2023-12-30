@@ -1,38 +1,33 @@
 import { useCallback } from 'react';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import {
-  accessTokenState,
   actionState,
   askUserState,
   avatarState,
   chatSettingsInputsState,
   chatSettingsValueState,
+  conversationIdToResumeState,
   elementState,
-  firstUserInteraction,
+  firstUserMessageState,
   loadingState,
   messagesState,
   sessionIdState,
   sessionState,
   tasklistState,
-  threadIdToResumeState,
   tokenCountState
 } from 'src/state';
-import { IAction, IFileRef, IStep } from 'src/types';
+import { IAction, IFileElement, IMessage } from 'src/types';
 import { addMessage } from 'src/utils/message';
 
-import { ChainlitAPI } from './api';
-
 const useChatInteract = () => {
-  const accessToken = useRecoilValue(accessTokenState);
   const session = useRecoilValue(sessionState);
   const askUser = useRecoilValue(askUserState);
-  const sessionId = useRecoilValue(sessionIdState);
 
   const resetChatSettings = useResetRecoilState(chatSettingsInputsState);
   const resetSessionId = useResetRecoilState(sessionIdState);
   const resetChatSettingsValue = useResetRecoilState(chatSettingsValueState);
 
-  const setFirstUserInteraction = useSetRecoilState(firstUserInteraction);
+  const setFirstUserMessage = useSetRecoilState(firstUserMessageState);
   const setLoading = useSetRecoilState(loadingState);
   const setMessages = useSetRecoilState(messagesState);
   const setElements = useSetRecoilState(elementState);
@@ -40,14 +35,14 @@ const useChatInteract = () => {
   const setTasklists = useSetRecoilState(tasklistState);
   const setActions = useSetRecoilState(actionState);
   const setTokenCount = useSetRecoilState(tokenCountState);
-  const setIdToResume = useSetRecoilState(threadIdToResumeState);
+  const setIdToResume = useSetRecoilState(conversationIdToResumeState);
 
   const clear = useCallback(() => {
     session?.socket.emit('clear_session');
     session?.socket.disconnect();
     setIdToResume(undefined);
     resetSessionId();
-    setFirstUserInteraction(undefined);
+    setFirstUserMessage(undefined);
     setMessages([]);
     setElements([]);
     setAvatars([]);
@@ -59,75 +54,44 @@ const useChatInteract = () => {
   }, [session]);
 
   const sendMessage = useCallback(
-    (message: IStep, fileReferences?: IFileRef[]) => {
+    (message: IMessage, files?: IFileElement[]) => {
       setMessages((oldMessages) => addMessage(oldMessages, message));
 
-      session?.socket.emit('ui_message', { message, fileReferences });
+      session?.socket.emit('ui_message', { message, files });
     },
-    [session?.socket]
+    [session]
   );
 
   const replyMessage = useCallback(
-    (message: IStep) => {
+    (message: IMessage) => {
       if (askUser) {
         setMessages((oldMessages) => addMessage(oldMessages, message));
         askUser.callback(message);
       }
     },
-    [askUser]
+    [askUser, session]
   );
 
   const updateChatSettings = useCallback(
     (values: object) => {
       session?.socket.emit('chat_settings_change', values);
     },
-    [session?.socket]
+    [session]
   );
 
   const stopTask = useCallback(() => {
     setLoading(false);
     session?.socket.emit('stop');
-  }, [session?.socket]);
+  }, [session]);
 
   const callAction = useCallback(
     (action: IAction) => {
-      const socket = session?.socket;
-      if (!socket) return;
-
-      const promise = new Promise<{
-        id: string;
-        status: boolean;
-        response?: string;
-      }>((resolve, reject) => {
-        socket.once('action_response', (response) => {
-          if (response.status) {
-            resolve(response);
-          } else {
-            reject(response);
-          }
-        });
-      });
-
-      socket.emit('action_call', action);
-
-      return promise;
+      session?.socket.emit('action_call', action);
     },
-    [session?.socket]
-  );
-
-  const uploadFile = useCallback(
-    (
-      client: ChainlitAPI,
-      file: File,
-      onProgress: (progress: number) => void
-    ) => {
-      return client.uploadFile(file, onProgress, sessionId, accessToken);
-    },
-    [sessionId, accessToken]
+    [session]
   );
 
   return {
-    uploadFile,
     callAction,
     clear,
     replyMessage,

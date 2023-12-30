@@ -1,40 +1,60 @@
-import { useState } from 'react';
-import { useCopyToClipboard } from 'usehooks-ts';
+import { grey } from 'theme/palette';
+import { useCopyToClipboard, useToggle } from 'usehooks-ts';
 
-import ContentPaste from '@mui/icons-material/ContentPaste';
-import IconButton, { IconButtonProps } from '@mui/material/IconButton';
+import CopyAll from '@mui/icons-material/CopyAll';
+import { IconProps } from '@mui/material/Icon';
+import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+
+import { useIsDarkMode } from 'hooks/useIsDarkMode';
 
 interface ClipboardCopyProps {
   value: string;
   theme?: 'dark' | 'light';
-  edge?: IconButtonProps['edge'];
+  size?: IconProps['fontSize'];
 }
 
-const ClipboardCopy = ({ value, edge }: ClipboardCopyProps): JSX.Element => {
-  const [isCopied, setIsCopied] = useState(false);
+const ClipboardCopy = ({
+  value,
+  size,
+  theme
+}: ClipboardCopyProps): JSX.Element => {
+  const [showTooltip, toggleTooltip] = useToggle();
+  const isDarkMode = useIsDarkMode();
   const [_, copy] = useCopyToClipboard();
 
-  const handleCopy = () => {
-    copy(value)
-      .then(() => {
-        setIsCopied(true);
-      })
-      .catch((err) => console.log('An error occurred while copying: ', err));
-  };
+  const getColor = () => {
+    if (theme) {
+      if (theme === 'dark') return grey[200];
+      else if (theme === 'light') return grey[800];
+    }
 
-  const handleTooltipClose = () => {
-    setIsCopied(false);
+    return isDarkMode ? grey[200] : grey[800];
   };
 
   return (
     <Tooltip
-      title={isCopied ? 'Copied to clipboard!' : 'Copy'}
-      onClose={handleTooltipClose}
+      open={showTooltip}
+      title={'Copied to clipboard!'}
+      onClose={toggleTooltip}
       sx={{ zIndex: 2 }}
     >
-      <IconButton color="inherit" edge={edge} onClick={handleCopy}>
-        <ContentPaste sx={{ height: 16, width: 16 }} />
+      <IconButton
+        sx={{
+          color: getColor(),
+          position: 'absolute',
+          right: 0,
+          top: 0
+        }}
+        onClick={() => {
+          copy(value)
+            .then(() => toggleTooltip())
+            .catch((err) =>
+              console.log('An error occurred while copying: ', err)
+            );
+        }}
+      >
+        <CopyAll fontSize={size} />
       </IconButton>
     </Tooltip>
   );

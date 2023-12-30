@@ -86,11 +86,9 @@ const Code = ({ children, ...props }: any) => {
     >
       <Stack
         px={2}
-        py={0.5}
+        py={1}
         direction="row"
         sx={{
-          justifyContent: 'space-between',
-          alignItems: 'center',
           borderTopLeftRadius: '4px',
           borderTopRightRadius: '4px',
           background: isDarkMode ? grey[900] : grey[200],
@@ -98,7 +96,7 @@ const Code = ({ children, ...props }: any) => {
         }}
       >
         <Typography variant="caption">{match?.[1] || 'Raw code'}</Typography>
-        <ClipboardCopy edge="end" value={code} />
+        <ClipboardCopy value={code} size="small" />
       </Stack>
 
       {highlightedCode}

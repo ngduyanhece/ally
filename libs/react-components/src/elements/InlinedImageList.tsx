@@ -8,10 +8,7 @@ interface Props {
 }
 
 const InlinedImageList = ({ items }: Props) => (
-  <ListWithSize<IImageElement>
-    elements={items}
-    renderElement={(ctx) => <ImageElement element={ctx.element} />}
-  />
+  <ListWithSize<IImageElement> elements={items} renderElement={ImageElement} />
 );
 
 export { InlinedImageList };

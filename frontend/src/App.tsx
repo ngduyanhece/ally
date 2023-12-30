@@ -1,10 +1,10 @@
-import { apiClient } from 'api';
+import { wsEndpoint } from 'api';
 import { useAuth } from 'api/auth';
 import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { RouterProvider } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { router } from 'router';
-import { Toaster } from 'sonner';
 
 import { Box, GlobalStyles } from '@mui/material';
 import { Theme, ThemeProvider } from '@mui/material/styles';
@@ -89,7 +89,7 @@ function App() {
       return;
     } else {
       connect({
-        client: apiClient,
+        wsEndpoint,
         userEnv,
         accessToken
       });
@@ -109,14 +109,19 @@ function App() {
         }}
       />
       <Toaster
-        className="toast"
-        position="top-right"
         toastOptions={{
+          className: 'toast',
           style: {
+            maxWidth: 500,
             fontFamily: 'Inter',
             background: theme.palette.background.paper,
             border: `1px solid ${theme.palette.divider}`,
-            color: theme.palette.text.primary
+            padding: theme.spacing(1),
+            color: theme.palette.text.primary,
+            boxShadow:
+              theme.palette.mode === 'light'
+                ? '0px 2px 4px 0px #0000000D'
+                : '0px 10px 10px 0px #0000000D'
           }
         }}
       />

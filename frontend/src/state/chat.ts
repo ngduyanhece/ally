@@ -1,18 +1,8 @@
 import { atom } from 'recoil';
 
-export interface IAttachment {
-  id: string;
-  serverId?: string;
-  name: string;
-  size: number;
-  type: string;
-  uploadProgress?: number;
-  uploaded?: boolean;
-  cancel?: () => void;
-  remove?: () => void;
-}
+import { IFileElement } from '@chainlit/react-client';
 
-export const attachmentsState = atom<IAttachment[]>({
+export const attachmentsState = atom<IFileElement[]>({
   key: 'Attachments',
   default: []
 });

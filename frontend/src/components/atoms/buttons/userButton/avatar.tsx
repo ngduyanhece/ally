@@ -14,9 +14,9 @@ export default function UserAvatar() {
           bgcolor: 'primary.main',
           color: 'primary.contrastText'
         }}
-        src={user.metadata?.image || undefined}
+        src={user.image || undefined}
       >
-        {user.identifier?.[0]}
+        {user.username?.[0]}
       </Avatar>
     );
   } else {

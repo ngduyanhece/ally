@@ -32,3 +32,7 @@ class UserAgentEntity(BaseModel):
 	instructions: str
 	model: Optional[ModelTye]
 	rights: RoleEnum
+
+class ToolEntity(BaseModel):
+	id: UUID
+	name: str

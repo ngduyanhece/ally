@@ -1,29 +1,29 @@
 import { MessageContext } from 'contexts/MessageContext';
 import { useContext } from 'react';
 
-import Terminal from '@mui/icons-material/Terminal';
+import BugReport from '@mui/icons-material/BugReport';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 
-import type { IStep } from 'client-types/';
+import type { IMessage } from 'client-types/';
 
 interface Props {
-  step: IStep;
+  message: IMessage;
 }
 
-const PlaygroundButton = ({ step }: Props) => {
+const PlaygroundButton = ({ message }: Props) => {
   const { onPlaygroundButtonClick } = useContext(MessageContext);
 
   return (
     <Tooltip title="Inspect in prompt playground">
       <IconButton
-        color="inherit"
+        size="small"
         className="playground-button"
         onClick={() => {
-          onPlaygroundButtonClick && onPlaygroundButtonClick(step);
+          onPlaygroundButtonClick && onPlaygroundButtonClick(message);
         }}
       >
-        <Terminal sx={{ width: '18px', height: '18px' }} />
+        <BugReport sx={{ width: '16px', height: '16px' }} />
       </IconButton>
     </Tooltip>
   );

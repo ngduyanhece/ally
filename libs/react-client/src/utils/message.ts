@@ -1,9 +1,8 @@
 import isEqual from 'lodash/isEqual';
+import { IMessage } from 'src/types';
 
-import { IStep } from '..';
-
-const nestMessages = (messages: IStep[]): IStep[] => {
-  let nestedMessages: IStep[] = [];
+const nestMessages = (messages: IMessage[]): IMessage[] => {
+  let nestedMessages: IMessage[] = [];
 
   for (const message of messages) {
     nestedMessages = addMessage(nestedMessages, message);
@@ -12,7 +11,7 @@ const nestMessages = (messages: IStep[]): IStep[] => {
   return nestedMessages;
 };
 
-const isLastMessage = (messages: IStep[], index: number) => {
+const isLastMessage = (messages: IMessage[], index: number) => {
   if (messages.length - 1 === index) {
     return true;
   }
@@ -30,12 +29,12 @@ const isLastMessage = (messages: IStep[], index: number) => {
 
 // Nested messages utils
 
-const addMessage = (messages: IStep[], message: IStep): IStep[] => {
+const addMessage = (messages: IMessage[], message: IMessage): IMessage[] => {
   if (hasMessageById(messages, message.id)) {
     return updateMessageById(messages, message.id, message);
-  } else if ('parentId' in message && message.parentId) {
+  } else if (message.parentId) {
     return addMessageToParent(messages, message.parentId, message);
-  } else if ('indent' in message && message.indent && message.indent > 0) {
+  } else if (message.indent && message.indent > 0) {
     return addIndentMessage(messages, message.indent, message);
   } else {
     return [...messages, message];
@@ -43,11 +42,11 @@ const addMessage = (messages: IStep[], message: IStep): IStep[] => {
 };
 
 const addIndentMessage = (
-  messages: IStep[],
+  messages: IMessage[],
   indent: number,
-  newMessage: IStep,
+  newMessage: IMessage,
   currentIndentation: number = 0
-): IStep[] => {
+): IMessage[] => {
   const nextMessages = [...messages];
 
   if (nextMessages.length === 0) {
@@ -55,16 +54,16 @@ const addIndentMessage = (
   } else {
     const index = nextMessages.length - 1;
     const msg = nextMessages[index];
-    msg.steps = msg.steps || [];
+    msg.subMessages = msg.subMessages || [];
 
     if (currentIndentation + 1 === indent) {
-      msg.steps = [...msg.steps, newMessage];
+      msg.subMessages = [...msg.subMessages, newMessage];
       nextMessages[index] = { ...msg };
 
       return nextMessages;
     } else {
-      msg.steps = addIndentMessage(
-        msg.steps,
+      msg.subMessages = addIndentMessage(
+        msg.subMessages,
         indent,
         newMessage,
         currentIndentation + 1
@@ -77,20 +76,26 @@ const addIndentMessage = (
 };
 
 const addMessageToParent = (
-  messages: IStep[],
+  messages: IMessage[],
   parentId: string,
-  newMessage: IStep
-): IStep[] => {
+  newMessage: IMessage
+): IMessage[] => {
   const nextMessages = [...messages];
 
   for (let index = 0; index < nextMessages.length; index++) {
     const msg = nextMessages[index];
 
     if (isEqual(msg.id, parentId)) {
-      msg.steps = msg.steps ? [...msg.steps, newMessage] : [newMessage];
+      msg.subMessages = msg.subMessages
+        ? [...msg.subMessages, newMessage]
+        : [newMessage];
       nextMessages[index] = { ...msg };
-    } else if (hasMessageById(nextMessages, parentId) && msg.steps) {
-      msg.steps = addMessageToParent(msg.steps, parentId, newMessage);
+    } else if (hasMessageById(nextMessages, parentId) && msg.subMessages) {
+      msg.subMessages = addMessageToParent(
+        msg.subMessages,
+        parentId,
+        newMessage
+      );
       nextMessages[index] = { ...msg };
     }
   }
@@ -98,12 +103,12 @@ const addMessageToParent = (
   return nextMessages;
 };
 
-const hasMessageById = (messages: IStep[], messageId: string) => {
+const hasMessageById = (messages: IMessage[], messageId: string) => {
   for (const message of messages) {
     if (isEqual(message.id, messageId)) {
       return true;
-    } else if (message.steps && message.steps.length > 0) {
-      if (hasMessageById(message.steps, messageId)) {
+    } else if (message.subMessages && message.subMessages.length > 0) {
+      if (hasMessageById(message.subMessages, messageId)) {
         return true;
       }
     }
@@ -112,19 +117,23 @@ const hasMessageById = (messages: IStep[], messageId: string) => {
 };
 
 const updateMessageById = (
-  messages: IStep[],
+  messages: IMessage[],
   messageId: string,
-  updatedMessage: IStep
-): IStep[] => {
+  updatedMessage: IMessage
+): IMessage[] => {
   const nextMessages = [...messages];
 
   for (let index = 0; index < nextMessages.length; index++) {
     const msg = nextMessages[index];
 
     if (isEqual(msg.id, messageId)) {
-      nextMessages[index] = { steps: msg.steps, ...updatedMessage };
-    } else if (hasMessageById(nextMessages, messageId) && msg.steps) {
-      msg.steps = updateMessageById(msg.steps, messageId, updatedMessage);
+      nextMessages[index] = { subMessages: msg.subMessages, ...updatedMessage };
+    } else if (hasMessageById(nextMessages, messageId) && msg.subMessages) {
+      msg.subMessages = updateMessageById(
+        msg.subMessages,
+        messageId,
+        updatedMessage
+      );
       nextMessages[index] = { ...msg };
     }
   }
@@ -132,7 +141,7 @@ const updateMessageById = (
   return nextMessages;
 };
 
-const deleteMessageById = (messages: IStep[], messageId: string) => {
+const deleteMessageById = (messages: IMessage[], messageId: string) => {
   let nextMessages = [...messages];
 
   for (let index = 0; index < nextMessages.length; index++) {
@@ -143,8 +152,8 @@ const deleteMessageById = (messages: IStep[], messageId: string) => {
         ...nextMessages.slice(0, index),
         ...nextMessages.slice(index + 1)
       ];
-    } else if (hasMessageById(nextMessages, messageId) && msg.steps) {
-      msg.steps = deleteMessageById(msg.steps, messageId);
+    } else if (hasMessageById(nextMessages, messageId) && msg.subMessages) {
+      msg.subMessages = deleteMessageById(msg.subMessages, messageId);
       nextMessages[index] = { ...msg };
     }
   }
@@ -153,37 +162,27 @@ const deleteMessageById = (messages: IStep[], messageId: string) => {
 };
 
 const updateMessageContentById = (
-  messages: IStep[],
+  messages: IMessage[],
   messageId: number | string,
   updatedContent: string,
   isSequence: boolean
-): IStep[] => {
+): IMessage[] => {
   const nextMessages = [...messages];
 
   for (let index = 0; index < nextMessages.length; index++) {
     const msg = nextMessages[index];
 
     if (isEqual(msg.id, messageId)) {
-      if ('content' in msg && msg.content !== undefined) {
-        if (isSequence) {
-          msg.content = updatedContent;
-        } else {
-          msg.content += updatedContent;
-        }
+      if (isSequence) {
+        msg.content = updatedContent;
       } else {
-        if ('output' in msg && msg.output !== undefined) {
-          if (isSequence) {
-            msg.output = updatedContent;
-          } else {
-            msg.output += updatedContent;
-          }
-        }
+        msg.content += updatedContent;
       }
 
       nextMessages[index] = { ...msg };
-    } else if (msg.steps) {
-      msg.steps = updateMessageContentById(
-        msg.steps,
+    } else if (msg.subMessages) {
+      msg.subMessages = updateMessageContentById(
+        msg.subMessages,
         messageId,
         updatedContent,
         isSequence

@@ -8,10 +8,7 @@ interface Props {
 }
 
 const InlinedVideoList = ({ items }: Props) => (
-  <ListWithSize<IVideoElement>
-    elements={items}
-    renderElement={(ctx) => <VideoElement element={ctx.element} />}
-  />
+  <ListWithSize<IVideoElement> elements={items} renderElement={VideoElement} />
 );
 
 export { InlinedVideoList };

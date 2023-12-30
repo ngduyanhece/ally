@@ -3,12 +3,12 @@ import { grey } from 'theme/palette';
 import Box from '@mui/material/Box';
 import useTheme from '@mui/material/styles/useTheme';
 
-import { type IAudioElement } from 'client-types/';
+import type { IAudioElement } from 'client-types/';
 
 const AudioElement = ({ element }: { element: IAudioElement }) => {
   const theme = useTheme();
 
-  if (!element.url) {
+  if (!element.url && !element.content) {
     return null;
   }
 
@@ -24,7 +24,15 @@ const AudioElement = ({ element }: { element: IAudioElement }) => {
       >
         {element.name}
       </Box>
-      <audio controls src={element.url}></audio>
+      <audio
+        controls
+        src={
+          element.url ||
+          URL.createObjectURL(
+            new Blob([element.content!], { type: 'audio/mpeg' })
+          )
+        }
+      ></audio>
     </Box>
   );
 };

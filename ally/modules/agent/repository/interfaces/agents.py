@@ -42,3 +42,10 @@ class AgentsInterface(ABC):
 		Get an agent by id
 		"""
 		pass
+
+	@abstractmethod
+	def get_agent_by_name(self, agent_name: str) -> AgentEntity | None:
+		"""
+		Get an agent by name
+		"""
+		pass

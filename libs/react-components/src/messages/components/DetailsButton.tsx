@@ -6,10 +6,10 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import type { IStep } from 'client-types/';
+import type { IMessage } from 'client-types/';
 
 interface Props {
-  message: IStep;
+  message: IMessage;
   opened: boolean;
   loading?: boolean;
   onClick: () => void;
@@ -18,27 +18,25 @@ interface Props {
 const DetailsButton = ({ message, opened, onClick, loading }: Props) => {
   const messageContext = useContext(MessageContext);
 
-  const nestedCount = message.steps?.length;
+  const nestedCount = message.subMessages?.length;
   const nested = !!nestedCount;
 
-  const lastStep = nested ? message.steps![nestedCount - 1] : undefined;
+  const tool = nested
+    ? message.subMessages![nestedCount - 1].author
+    : undefined;
 
-  const tool = lastStep ? lastStep.name : undefined;
-
-  const content = message.output;
-
-  const isRunningEmptyStep = loading && !content;
+  const isRunningEmptyStep = loading && !message.content;
 
   const show = tool || isRunningEmptyStep;
-  const hide = messageContext.hideCot && !isRunningEmptyStep;
 
-  if (!show || hide) {
+  if (!show || messageContext.hideCot) {
     return null;
   }
 
   // Don't count empty steps
   const stepCount = nestedCount
-    ? message.steps!.filter((m) => !!m.output || m.steps?.length).length
+    ? message.subMessages!.filter((m) => !!m.content || m.subMessages?.length)
+        .length
     : 0;
 
   const text = loading

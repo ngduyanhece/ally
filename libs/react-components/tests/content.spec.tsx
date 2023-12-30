@@ -9,11 +9,10 @@ it('renders the message content', () => {
   const { getByText } = render(
     <MessageContent
       message={{
-        threadId: 'test',
-        type: 'system_message',
-        output: 'Hello World',
+        authorIsUser: false,
+        content: 'Hello World',
         id: 'test',
-        name: 'User',
+        author: 'User',
         createdAt: 0
       }}
       elements={[]}
@@ -26,11 +25,10 @@ it('highlights multiple sources correctly (no substring matching)', () => {
   const { getByRole } = render(
     <MessageContent
       message={{
-        threadId: 'test',
-        type: 'system_message',
-        output: `Hello world source_121, source_1, source_12`,
+        authorIsUser: false,
+        content: `Hello world source_121, source_1, source_12`,
         id: 'test2',
-        name: 'Test',
+        author: 'Test',
         createdAt: 0
       }}
       elements={[
@@ -38,22 +36,19 @@ it('highlights multiple sources correctly (no substring matching)', () => {
           name: 'source_1',
           type: 'text',
           display: 'side',
-          url: 'source_1',
-          forId: 'test2'
+          content: 'source_1'
         } as ITextElement,
         {
           name: 'source_12',
           display: 'side',
           type: 'text',
-          forId: 'test2',
-          url: 'hi'
+          content: 'hi'
         } as ITextElement,
         {
           name: 'source_121',
           display: 'side',
           type: 'text',
-          forId: 'test2',
-          url: 'hi'
+          content: 'hi'
         } as ITextElement
       ]}
     />
@@ -67,11 +62,10 @@ it('highlights sources containing regex characters correctly', () => {
   const { getByRole } = render(
     <MessageContent
       message={{
-        threadId: 'test',
-        type: 'system_message',
-        output: `Hello world: Document[1], source(12), page{12}`,
+        authorIsUser: false,
+        content: `Hello world: Document[1], source(12), page{12}`,
         id: 'test2',
-        name: 'Test',
+        author: 'Test',
         createdAt: 0
       }}
       elements={[
@@ -79,22 +73,19 @@ it('highlights sources containing regex characters correctly', () => {
           name: 'Document[1]',
           display: 'side',
           type: 'text',
-          url: 'hi',
-          forId: 'test2'
+          content: 'hi'
         } as ITextElement,
         {
           name: 'source(12)',
           display: 'side',
           type: 'text',
-          url: 'hi',
-          forId: 'test2'
+          content: 'hi'
         } as ITextElement,
         {
           name: 'page{12}',
           display: 'side',
           type: 'text',
-          url: 'hi',
-          forId: 'test2'
+          content: 'hi'
         } as ITextElement
       ]}
     />
@@ -108,11 +99,10 @@ it('preserves the box size when collapsing', () => {
   const { getByRole } = render(
     <MessageContent
       message={{
-        threadId: 'test',
-        type: 'system_message',
-        output: 'hello'.repeat(650),
+        authorIsUser: false,
+        content: 'hello'.repeat(650),
         id: 'test2',
-        name: 'Test',
+        author: 'Test',
         createdAt: 0
       }}
       elements={[
@@ -120,19 +110,19 @@ it('preserves the box size when collapsing', () => {
           name: 'source_1',
           type: 'text',
           display: 'side',
-          url: 'source_1'
+          content: 'source_1'
         } as ITextElement,
         {
           name: 'source_12',
           display: 'side',
           type: 'text',
-          url: 'hi'
+          content: 'hi'
         } as ITextElement,
         {
           name: 'source_121',
           display: 'side',
           type: 'text',
-          url: 'hi'
+          content: 'hi'
         } as ITextElement
       ]}
       preserveSize

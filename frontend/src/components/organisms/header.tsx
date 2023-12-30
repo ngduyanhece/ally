@@ -1,8 +1,8 @@
-import { useAuth } from 'api/auth';
-import { memo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from "api/auth";
+import { memo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
-import MenuIcon from '@mui/icons-material/Menu';
+import MenuIcon from "@mui/icons-material/Menu";
 import {
   AppBar,
   Box,
@@ -10,20 +10,20 @@ import {
   IconButton,
   Menu,
   Stack,
-  Toolbar
-} from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
+  Toolbar,
+} from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
-import { RegularButton } from '@chainlit/react-components';
+import { RegularButton } from "@chainlit/react-components";
 
-import GithubButton from 'components/atoms/buttons/githubButton';
-import UserButton from 'components/atoms/buttons/userButton';
-import { Logo } from 'components/atoms/logo';
-import NewChatButton from 'components/molecules/newChatButton';
+import GithubButton from "components/atoms/buttons/githubButton";
+import UserButton from "components/atoms/buttons/userButton";
+import { Logo } from "components/atoms/logo";
+import NewChatButton from "components/molecules/newChatButton";
 
-import { IProjectSettings } from 'state/project';
+import { IProjectSettings } from "state/project";
 
-import OpenChatHistoryButton from './threadHistory/sidebar/OpenThreadListButton';
+import OpenChatHistoryButton from "./conversationsHistory/sidebar/OpenChatHistoryButton";
 
 interface INavItem {
   to: string;
@@ -45,11 +45,11 @@ function NavItem({ to, label }: INavItem) {
       to={to}
       key={to}
       sx={{
-        textTransform: 'none',
-        color: 'text.secondary',
-        '&:hover': {
-          background: 'transparent'
-        }
+        textTransform: "none",
+        color: "text.secondary",
+        "&:hover": {
+          background: "transparent",
+        },
       }}
     >
       {label}
@@ -75,14 +75,14 @@ const Nav = ({ dataPersistence, hasReadme, matches }: NavProps) => {
     anchorEl = ref.current;
   }
 
-  const tabs = [{ to: '/', label: 'Chat' }];
+  const tabs = [{ to: "/", label: "Chat" }];
 
   if (hasReadme) {
-    tabs.push({ to: '/readme', label: 'Readme' });
+    tabs.push({ to: "/readme", label: "Readme" });
   }
 
   const nav = (
-    <Stack direction={matches ? 'column' : 'row'} spacing={1}>
+    <Stack direction={matches ? "column" : "row"} spacing={1}>
       {tabs.map((t) => {
         const active = location.pathname === t.to;
         return (
@@ -116,20 +116,20 @@ const Nav = ({ dataPersistence, hasReadme, matches }: NavProps) => {
           PaperProps={{
             sx: {
               p: 1,
-              backgroundImage: 'none',
+              backgroundImage: "none",
               mt: -2,
               ml: -1,
-              overflow: 'visible',
-              overflowY: 'auto',
+              overflow: "visible",
+              overflowY: "auto",
               border: (theme) => `1px solid ${theme.palette.divider}`,
               boxShadow: (theme) =>
-                theme.palette.mode === 'light'
-                  ? '0px 2px 4px 0px #0000000D'
-                  : '0px 10px 10px 0px #0000000D'
-            }
+                theme.palette.mode === "light"
+                  ? "0px 2px 4px 0px #0000000D"
+                  : "0px 10px 10px 0px #0000000D",
+            },
           }}
-          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          anchorOrigin={{ vertical: "top", horizontal: "left" }}
+          transformOrigin={{ vertical: "bottom", horizontal: "left" }}
         >
           {nav}
         </Menu>
@@ -142,22 +142,22 @@ const Nav = ({ dataPersistence, hasReadme, matches }: NavProps) => {
 
 const Header = memo(
   ({ projectSettings }: { projectSettings?: IProjectSettings }) => {
-    const matches = useMediaQuery('(max-width: 66rem)');
+    const matches = useMediaQuery("(max-width: 66rem)");
 
     return (
       <AppBar elevation={0} color="transparent" position="static">
         <Toolbar
           sx={{
             padding: (theme) => `0 ${theme.spacing(2)} !important`,
-            minHeight: '60px !important',
-            borderBottomWidth: '1px',
-            borderBottomStyle: 'solid',
+            minHeight: "60px !important",
+            borderBottomWidth: "1px",
+            borderBottomStyle: "solid",
             background: (theme) => theme.palette.background.paper,
-            borderBottomColor: (theme) => theme.palette.divider
+            borderBottomColor: (theme) => theme.palette.divider,
           }}
         >
-          <Stack alignItems="center" direction={'row'} gap={!matches ? 3 : 1}>
-            {!matches ? <Logo style={{ maxHeight: '25px' }} /> : null}
+          <Stack alignItems="center" direction={"row"} gap={!matches ? 3 : 1}>
+            {!matches ? <Logo style={{ maxHeight: "100px" }} /> : null}
             <Nav
               matches={matches}
               dataPersistence={projectSettings?.dataPersistence}
@@ -166,7 +166,7 @@ const Header = memo(
           </Stack>
           <Stack
             alignItems="center"
-            sx={{ ml: 'auto' }}
+            sx={{ ml: "auto" }}
             direction="row"
             spacing={1}
             color="text.primary"

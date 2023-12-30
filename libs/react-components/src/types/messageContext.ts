@@ -1,17 +1,11 @@
 import type {
   IAsk,
   IAvatarElement,
-  IFeedback,
-  IFileRef,
-  IMessageElement,
-  IStep
+  IMessage,
+  IMessageElement
 } from 'client-types/';
 
 interface IMessageContext {
-  uploadFile?: (
-    file: File,
-    onProgress: (progress: number) => void
-  ) => { xhr: XMLHttpRequest; promise: Promise<IFileRef> };
   askUser?: IAsk;
   avatars: IAvatarElement[];
   defaultCollapseContent: boolean;
@@ -23,12 +17,13 @@ interface IMessageContext {
   uiName: string;
   allowHtml?: boolean;
   latex?: boolean;
-  onPlaygroundButtonClick?: (step: IStep) => void;
+  onPlaygroundButtonClick?: (message: IMessage) => void;
   onElementRefClick?: (element: IMessageElement) => void;
   onFeedbackUpdated?: (
-    message: IStep,
+    message: IMessage,
+    feedback: number,
     onSuccess: () => void,
-    feedback: IFeedback
+    feedbackComment?: string
   ) => void;
   onError: (error: string) => void;
 }

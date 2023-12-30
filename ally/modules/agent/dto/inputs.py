@@ -12,7 +12,7 @@ class CreateAgentProperties(BaseModel):
 	"""The properties to create an agent."""
 	name: str
 	instructions: str
-	model: Optional[ModelTye]
+	model: ModelTye
 
 class AgentUpdatableProperties(BaseModel):
 	"""The properties to update an agent."""

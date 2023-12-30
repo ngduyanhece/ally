@@ -1,4 +1,5 @@
 
+
 from datetime import datetime
 
 from openai import AsyncOpenAI
@@ -48,6 +49,17 @@ class Agents(AgentsInterface):
 			return None
 		return AgentEntity(**response.data[0])
 	
+	def get_agent_by_name(self, agent_name: str) -> AgentEntity | None:
+		"""
+		Get an agent by name
+		"""
+		response = (
+			self.db.from_("agents").select("*").eq("name", agent_name).execute()
+		)
+		if len(response.data) == 0:
+			return None
+		return AgentEntity(**response.data[0])
+	
 	async def update_agent_by_id(
 		self, agent_id: str, agent: AgentUpdatableProperties
 	) -> AgentEntity | None:
@@ -77,7 +89,7 @@ class Agents(AgentsInterface):
 				.eq("id", agent_id)
 				.execute()
 			)
-			return AgentEntity(**response.data[0])
+			return AgentEntity(**response.data[0])	
 	
 	def update_agent_last_update_time(self, agent_id: str):
 		"""
@@ -101,5 +113,7 @@ class Agents(AgentsInterface):
 			await client.beta.assistants.delete(assistant_id=agent_id)
 			response = self.db.from_("agents").delete().eq("id", agent_id).execute()
 			return AgentEntity(**response.data[0])
+	
+	
 
 		

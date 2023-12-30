@@ -4,11 +4,7 @@ import { useRecoilValue } from 'recoil';
 
 import { Box, Popover, Tab, Tabs } from '@mui/material';
 
-import {
-  useChatInteract,
-  useChatMessages,
-  useChatSession
-} from '@chainlit/react-client';
+import { useChatInteract, useChatSession } from '@chainlit/react-client';
 import {
   InputStateHandler,
   Markdown,
@@ -23,7 +19,6 @@ import NewChatDialog from './newChatDialog';
 export default function ChatProfiles() {
   const pSettings = useRecoilValue(projectSettingsState);
   const { chatProfile, setChatProfile } = useChatSession();
-  const { firstInteraction } = useChatMessages();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [chatProfileDescription, setChatProfileDescription] = useState('');
   const { clear } = useChatInteract();
@@ -36,13 +31,12 @@ export default function ChatProfiles() {
     setNewChatProfile(null);
   };
 
-  const handleConfirm = (newChatProfileWithoutConfirm?: string) => {
-    const chatProfile = newChatProfileWithoutConfirm || newChatProfile;
-    if (!chatProfile) {
+  const handleConfirm = () => {
+    if (!newChatProfile) {
       // Should never happen
       throw new Error('Retry clicking on a profile before starting a new chat');
     }
-    setChatProfile(chatProfile);
+    setChatProfile(newChatProfile);
     setNewChatProfile(null);
     clear();
     handleClose();
@@ -76,11 +70,7 @@ export default function ChatProfiles() {
             value={chatProfile || ''}
             onChange={(event: React.SyntheticEvent, newValue: string) => {
               setNewChatProfile(newValue);
-              if (firstInteraction) {
-                setOpenDialog(true);
-              } else {
-                handleConfirm(newValue);
-              }
+              setOpenDialog(true);
             }}
             variant="scrollable"
             sx={{
@@ -188,7 +178,7 @@ export default function ChatProfiles() {
       <NewChatDialog
         open={openDialog}
         handleClose={handleClose}
-        handleConfirm={() => handleConfirm()}
+        handleConfirm={handleConfirm}
       />
     </Box>
   );

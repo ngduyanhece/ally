@@ -8,7 +8,7 @@ export * from './types';
 export * from 'theme/index';
 export * from 'hooks/index';
 
-export { Attachment } from './Attachment';
+export { Attachments } from './Attachments';
 export { ClipboardCopy } from './ClipboardCopy';
 export { Code } from './Code';
 export { Markdown } from './Markdown';

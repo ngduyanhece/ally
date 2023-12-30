@@ -57,16 +57,7 @@ export default function EditorWrapper({
         )}
       >
         {clipboardValue ? (
-          <Box
-            sx={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              color: 'text.secondary'
-            }}
-          >
-            <ClipboardCopy value={clipboardValue} />
-          </Box>
+          <ClipboardCopy value={clipboardValue} size="small" />
         ) : null}
         {children}
       </Box>

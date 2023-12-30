@@ -1,19 +1,20 @@
 import { apiClient } from 'api';
 import { memo, useCallback, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { toast } from 'sonner';
 
 import {
   IAction,
   IAsk,
   IAvatarElement,
-  IFeedback,
   IFunction,
+  IMessage,
   IMessageElement,
-  IStep,
   ITool,
-  useChatInteract
+  accessTokenState,
+  messagesState,
+  updateMessageById
 } from '@chainlit/react-client';
 import { MessageContainer as CMessageContainer } from '@chainlit/react-components';
 
@@ -27,14 +28,9 @@ interface Props {
   actions: IAction[];
   elements: IMessageElement[];
   avatars: IAvatarElement[];
-  messages: IStep[];
+  messages: IMessage[];
   askUser?: IAsk;
   autoScroll?: boolean;
-  onFeedbackUpdated: (
-    message: IStep,
-    onSuccess: () => void,
-    feedback: IFeedback
-  ) => void;
   callAction?: (action: IAction) => void;
   setAutoScroll?: (autoScroll: boolean) => void;
 }
@@ -48,36 +44,29 @@ const MessageContainer = memo(
     autoScroll,
     elements,
     messages,
-    onFeedbackUpdated,
     callAction,
     setAutoScroll
   }: Props) => {
+    const accessToken = useRecoilValue(accessTokenState);
     const appSettings = useRecoilValue(settingsState);
     const projectSettings = useRecoilValue(projectSettingsState);
     const setPlayground = useSetRecoilState(playgroundState);
+    const setMessages = useSetRecoilState(messagesState);
     const setSideView = useSetRecoilState(sideViewState);
     const highlightedMessage = useRecoilValue(highlightMessage);
-    const { uploadFile: _uploadFile } = useChatInteract();
-
-    const uploadFile = useCallback(
-      (file: File, onProgress: (progress: number) => void) => {
-        return _uploadFile(apiClient, file, onProgress);
-      },
-      [_uploadFile]
-    );
 
     const enableFeedback = !!projectSettings?.dataPersistence;
 
     const navigate = useNavigate();
 
     const onPlaygroundButtonClick = useCallback(
-      (message: IStep) => {
+      (message: IMessage) => {
         setPlayground((old) => {
-          const generation = message.generation;
           let functions =
-            (generation?.settings?.functions as unknown as IFunction[]) || [];
+            (message.prompt?.settings?.functions as unknown as IFunction[]) ||
+            [];
           const tools =
-            (generation?.settings?.tools as unknown as ITool[]) || [];
+            (message.prompt?.settings?.tools as unknown as ITool[]) || [];
           if (tools.length) {
             functions = [
               ...functions,
@@ -88,15 +77,15 @@ const MessageContainer = memo(
           }
           return {
             ...old,
-            generation: generation
+            prompt: message.prompt
               ? {
-                  ...generation,
+                  ...message.prompt,
                   functions
                 }
               : undefined,
-            originalGeneration: generation
+            originalPrompt: message.prompt
               ? {
-                  ...generation,
+                  ...message.prompt,
                   functions
                 }
               : undefined
@@ -104,6 +93,44 @@ const MessageContainer = memo(
         });
       },
       [setPlayground]
+    );
+
+    const onFeedbackUpdated = useCallback(
+      async (
+        message: IMessage,
+        feedback: number,
+        onSuccess: () => void,
+        feedbackComment?: string
+      ) => {
+        try {
+          await toast.promise(
+            apiClient.setHumanFeedback(
+              message.id,
+              feedback,
+              feedbackComment,
+              accessToken
+            ),
+            {
+              loading: 'Updating...',
+              success: 'Feedback updated!',
+              error: (err) => {
+                return <span>{err.message}</span>;
+              }
+            }
+          );
+          setMessages((prev) =>
+            updateMessageById(prev, message.id, {
+              ...message,
+              humanFeedback: feedback,
+              humanFeedbackComment: feedbackComment
+            })
+          );
+          onSuccess();
+        } catch (err) {
+          console.log(err);
+        }
+      },
+      []
     );
 
     const onElementRefClick = useCallback(
@@ -115,8 +142,8 @@ const MessageContainer = memo(
           return;
         }
 
-        if (element.threadId) {
-          path += `?thread=${element.threadId}`;
+        if (element.conversationId) {
+          path += `?conversation=${element.conversationId}`;
         }
 
         return navigate(element.display === 'page' ? path : '#');
@@ -147,7 +174,6 @@ const MessageContainer = memo(
     // This prevents unnecessary re-renders of children components when no props have changed.
     const memoizedContext = useMemo(() => {
       return {
-        uploadFile,
         askUser,
         allowHtml: projectSettings?.features?.unsafe_allow_html,
         latex: projectSettings?.features?.latex,

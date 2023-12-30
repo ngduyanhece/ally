@@ -1,6 +1,6 @@
 import { TFormInput } from 'src/inputs';
 
-import type { IGeneration } from 'client-types/';
+import type { IPrompt } from 'client-types/';
 
 export interface ILLMProvider {
   id: string;
@@ -27,6 +27,6 @@ export type PromptMode = 'Template' | 'Formatted';
 
 export interface IPlayground {
   providers?: ILLMProvider[];
-  generation?: IGeneration;
-  originalGeneration?: IGeneration;
+  prompt?: IPrompt;
+  originalPrompt?: IPrompt;
 }

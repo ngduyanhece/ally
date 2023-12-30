@@ -1,7 +1,7 @@
-import { type IVideoElement } from 'client-types/';
+import type { IVideoElement } from 'client-types/';
 
 const VideoElement = ({ element }: { element: IVideoElement }) => {
-  if (!element.url) {
+  if (!element.url && !element.content) {
     return null;
   }
 
@@ -10,7 +10,10 @@ const VideoElement = ({ element }: { element: IVideoElement }) => {
       className={`${element.display}-video`}
       width="100%"
       controls
-      src={element.url}
+      src={
+        element.url ||
+        URL.createObjectURL(new Blob([element.content!], { type: 'video/mp4' }))
+      }
     ></video>
   );
 };

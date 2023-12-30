@@ -2,12 +2,12 @@ import { MessageContext } from 'contexts/MessageContext';
 import { memo, useContext } from 'react';
 import { isLastMessage } from 'utils/message';
 
-import type { IAction, IMessageElement, IStep } from 'client-types/';
+import type { IAction, IMessage, IMessageElement } from 'client-types/';
 
 import { Message } from './Message';
 
 interface Props {
-  messages: IStep[];
+  messages: IMessage[];
   elements: IMessageElement[];
   actions: IAction[];
   indent: number;
@@ -22,12 +22,11 @@ const Messages = memo(
     let previousAuthor = '';
 
     const filtered = messages.filter((m, i) => {
-      const content = m.output;
-      const hasContent = !!content;
+      const hasContent = !!m.content;
       const hasInlinedElement = elements.find(
-        (el) => el.display === 'inline' && el.forId === m.id
+        (el) => el.display === 'inline' && (el.forIds || []).indexOf(m.id) > -1
       );
-      const hasChildren = !!m.steps?.length && !messageContext.hideCot;
+      const hasChildren = !!m.subMessages?.length && !messageContext.hideCot;
       const isLast = i === messages.length - 1;
       const messageRunning =
         isRunning === undefined
@@ -44,16 +43,15 @@ const Messages = memo(
     return (
       <>
         {filtered.map((m, i) => {
-          const author = m.name;
           const isLast = isLastMessage(filtered, i);
           let messageRunning =
             isRunning === undefined ? messageContext.loading : isRunning;
           if (isRoot) {
             messageRunning = messageRunning && isLast;
           }
-          const showAvatar = author !== previousAuthor;
+          const showAvatar = m.author !== previousAuthor;
           const showBorder = false;
-          previousAuthor = author;
+          previousAuthor = m.author;
           return (
             <Message
               message={m}

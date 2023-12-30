@@ -4,14 +4,15 @@ import { Socket } from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
+  ConversationsHistory,
   IAction,
+  IAppUser,
   IAsk,
   IAvatarElement,
+  IMessage,
   IMessageElement,
-  IStep,
   ITasklistElement,
-  IUser,
-  ThreadHistory
+  Role
 } from './types';
 import { groupByDate } from './utils/group';
 
@@ -20,8 +21,8 @@ export interface ISession {
   error?: boolean;
 }
 
-export const threadIdToResumeState = atom<string | undefined>({
-  key: 'ThreadIdToResume',
+export const conversationIdToResumeState = atom<string | undefined>({
+  key: 'ConversationIdToResume',
   default: undefined
 });
 
@@ -53,7 +54,7 @@ export const actionState = atom<IAction[]>({
   default: []
 });
 
-export const messagesState = atom<IStep[]>({
+export const messagesState = atom<IMessage[]>({
   key: 'Messages',
   dangerouslyAllowMutability: true,
   default: []
@@ -112,8 +113,8 @@ export const tasklistState = atom<ITasklistElement[]>({
   default: []
 });
 
-export const firstUserInteraction = atom<string | undefined>({
-  key: 'FirstUserInteraction',
+export const firstUserMessageState = atom<IMessage | undefined>({
+  key: 'FirstUserMessage',
   default: undefined
 });
 
@@ -122,40 +123,48 @@ export const accessTokenState = atom<string | undefined>({
   default: undefined
 });
 
-export const userState = atom<IUser | null>({
+export const roleState = atom<Role>({
+  key: 'Role',
+  default: undefined
+});
+
+export const userState = atom<IAppUser | null>({
   key: 'User',
   default: null
 });
 
-export const threadHistoryState = atom<ThreadHistory | undefined>({
-  key: 'ThreadHistory',
-  default: {
-    threads: undefined,
-    currentThreadId: undefined,
-    timeGroupedThreads: undefined,
-    pageInfo: undefined
-  },
-  effects: [
-    ({ setSelf, onSet }: { setSelf: any; onSet: any }) => {
-      onSet(
-        (
-          newValue: ThreadHistory | undefined,
-          oldValue: ThreadHistory | undefined
-        ) => {
-          let timeGroupedThreads = newValue?.timeGroupedThreads;
-          if (
-            newValue?.threads &&
-            !isEqual(newValue.threads, oldValue?.timeGroupedThreads)
-          ) {
-            timeGroupedThreads = groupByDate(newValue.threads);
-          }
+export const conversationsHistoryState = atom<ConversationsHistory | undefined>(
+  {
+    key: 'ConversationsHistory',
+    default: {
+      conversations: undefined,
+      currentConversationId: undefined,
+      groupedConversations: undefined,
+      pageInfo: undefined
+    },
+    effects: [
+      ({ setSelf, onSet }: { setSelf: any; onSet: any }) => {
+        onSet(
+          (
+            newValue: ConversationsHistory | undefined,
+            oldValue: ConversationsHistory | undefined
+          ) => {
+            let groupedConversations = newValue?.groupedConversations;
 
-          setSelf({
-            ...newValue,
-            timeGroupedThreads
-          });
-        }
-      );
-    }
-  ]
-});
+            if (
+              newValue?.conversations &&
+              !isEqual(newValue.conversations, oldValue?.groupedConversations)
+            ) {
+              groupedConversations = groupByDate(newValue.conversations);
+            }
+
+            setSelf({
+              ...newValue,
+              groupedConversations
+            });
+          }
+        );
+      }
+    ]
+  }
+);

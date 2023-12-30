@@ -1,84 +1,30 @@
 import { MessageContext } from 'contexts/MessageContext';
-import { useContext, useState } from 'react';
+import { useContext } from 'react';
 
 import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
+import LoadingButton from '@mui/lab/LoadingButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useUpload } from 'hooks/useUpload';
 
-import type { IAsk, IFileRef } from 'client-types/';
+import type { IAsk, IFileResponse } from 'client-types/';
 
 const AskUploadChildButton = ({
   askUser,
-  uploadFile,
   onError
 }: {
   askUser: IAsk;
-  uploadFile: (
-    file: File,
-    onProgress: (progress: number) => void
-  ) => { xhr: XMLHttpRequest; promise: Promise<IFileRef> };
   onError: (error: string) => void;
 }) => {
-  const [uploads, setUploads] = useState<
-    {
-      progress: number;
-      uploaded: boolean;
-      cancel: () => void;
-      fileRef?: IFileRef;
-    }[]
-  >([]);
-
-  const uploading = uploads.some((upload) => !upload.uploaded);
-  const progress = uploads.reduce(
-    (acc, upload) => acc + upload.progress / uploads.length,
-    0
-  );
-
-  const onResolved = (files: File[]) => {
-    if (uploading) return;
-
-    const promises: Promise<IFileRef>[] = [];
-
-    const uploads = files.map((file, index) => {
-      const { xhr, promise } = uploadFile(file, (progress) => {
-        setUploads((prev) =>
-          prev.map((upload, i) => {
-            if (i === index) {
-              return { ...upload, progress };
-            }
-            return upload;
-          })
-        );
-      });
-      promises.push(promise);
-      return { progress: 0, uploaded: false, cancel: () => xhr.abort() };
-    });
-
-    Promise.all(promises)
-      .then((fileRefs) => askUser.callback(fileRefs))
-      .catch((error) => {
-        onError(`Failed to upload: ${error.message}`);
-        setUploads((prev) => {
-          prev.forEach((u) => u.cancel());
-          return [];
-        });
-      });
-
-    setUploads(uploads);
-  };
-
   const upload = useUpload({
     spec: askUser.spec,
-    onResolved: onResolved,
+    onResolved: (payloads: IFileResponse[]) => askUser?.callback(payloads),
     onError: (error: string) => onError(error)
   });
 
   if (!upload) return null;
-  const { getRootProps, getInputProps } = upload;
+  const { getRootProps, getInputProps, uploading } = upload;
 
   return (
     <Stack
@@ -101,18 +47,14 @@ const AskUploadChildButton = ({
           Limit {askUser.spec.max_size_mb}mb.
         </Typography>
       </Stack>
-      <Button
+      <LoadingButton
         id={uploading ? 'ask-upload-button-loading' : 'ask-upload-button'}
-        disabled={uploading}
-        sx={{ ml: 'auto !important', textTransform: 'capitalize' }}
+        loading={uploading}
+        sx={{ ml: 'auto !important' }}
         variant="contained"
       >
-        {uploading ? (
-          <CircularProgress variant="determinate" value={progress} size={20} />
-        ) : (
-          'Browse Files'
-        )}
-      </Button>
+        Browse Files
+      </LoadingButton>
     </Stack>
   );
 };
@@ -120,18 +62,10 @@ const AskUploadChildButton = ({
 const AskUploadButton = ({ onError }: { onError: (error: string) => void }) => {
   const messageContext = useContext(MessageContext);
 
-  if (
-    messageContext.askUser?.spec.type !== 'file' ||
-    !messageContext?.uploadFile
-  )
-    return null;
+  if (messageContext.askUser?.spec.type !== 'file') return null;
 
   return (
-    <AskUploadChildButton
-      onError={onError}
-      uploadFile={messageContext.uploadFile}
-      askUser={messageContext.askUser}
-    />
+    <AskUploadChildButton onError={onError} askUser={messageContext.askUser} />
   );
 };
 

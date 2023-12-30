@@ -1,4 +1,5 @@
 import { useRecoilValue } from 'recoil';
+import { IMessage } from 'src/types';
 
 import {
   actionState,
@@ -12,6 +13,10 @@ import {
   sessionState,
   tasklistState
 } from './state';
+
+export interface IMessageUpdate extends IMessage {
+  newId?: string;
+}
 
 export interface IToken {
   id: number | string;

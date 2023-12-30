@@ -1,12 +1,11 @@
-import { IGeneration, IThread } from 'src/types';
+import { IConversation, IPrompt } from 'src/types';
 import { removeToken } from 'src/utils/token';
-
-import { IFeedback } from 'src/types/feedback';
 
 export * from './hooks/auth';
 export * from './hooks/api';
 
-export interface IThreadFilters {
+export interface IConversationsFilters {
+  authorEmail?: string;
   search?: string;
   feedback?: number;
 }
@@ -148,22 +147,16 @@ export class ChainlitAPI extends APIBase {
     return res.json();
   }
 
-  async getGeneration(
-    generation: IGeneration,
+  async getCompletion(
+    prompt: IPrompt,
     userEnv = {},
     controller: AbortController,
     accessToken?: string,
     tokenCb?: (done: boolean, token: string) => void
   ) {
-    const payload = { userEnv };
-    if (generation.type === 'CHAT') {
-      payload['chatGeneration'] = generation;
-    } else {
-      payload['completionGeneration'] = generation;
-    }
     const response = await this.post(
-      `/generation`,
-      payload,
+      `/completion`,
+      { prompt, userEnv },
       accessToken,
       controller.signal
     );
@@ -199,24 +192,29 @@ export class ChainlitAPI extends APIBase {
     return stream;
   }
 
-  async setFeedback(
-    feedback: IFeedback,
+  async setHumanFeedback(
+    messageId: string,
+    feedback: number,
+    feedbackComment?: string,
     accessToken?: string
-  ): Promise<{ success: boolean; feedbackId: string }> {
-    const res = await this.put(`/feedback`, { feedback }, accessToken);
-    return res.json();
+  ) {
+    await this.put(
+      `/message/feedback`,
+      { messageId, feedback, feedbackComment },
+      accessToken
+    );
   }
 
-  async listThreads(
+  async getConversations(
     pagination: IPagination,
-    filter: IThreadFilters,
+    filter: IConversationsFilters,
     accessToken?: string
   ): Promise<{
     pageInfo: IPageInfo;
-    data: IThread[];
+    data: IConversation[];
   }> {
     const res = await this.post(
-      `/project/threads`,
+      `/project/conversations`,
       { pagination, filter },
       accessToken
     );
@@ -224,70 +222,14 @@ export class ChainlitAPI extends APIBase {
     return res.json();
   }
 
-  async deleteThread(threadId: string, accessToken?: string) {
-    const res = await this.delete(`/project/thread`, { threadId }, accessToken);
+  async deleteConversation(conversationId: string, accessToken?: string) {
+    const res = await this.delete(
+      `/project/conversation`,
+      { conversationId },
+      accessToken
+    );
 
     return res.json();
-  }
-
-  uploadFile(
-    file: File,
-    onProgress: (progress: number) => void,
-    sessionId: string,
-    token?: string
-  ) {
-    const xhr = new XMLHttpRequest();
-
-    const promise = new Promise<{ id: string }>((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      xhr.open(
-        'POST',
-        this.buildEndpoint(`/project/file?session_id=${sessionId}`),
-        true
-      );
-
-      if (token) {
-        xhr.setRequestHeader('Authorization', this.checkToken(token));
-      }
-
-      // Track the progress of the upload
-      xhr.upload.onprogress = function (event) {
-        if (event.lengthComputable) {
-          const percentage = (event.loaded / event.total) * 100;
-          onProgress(percentage);
-        }
-      };
-
-      xhr.onload = function () {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response);
-        } else {
-          reject('Upload failed');
-        }
-      };
-
-      xhr.onerror = function () {
-        reject('Upload error');
-      };
-
-      xhr.send(formData);
-    });
-
-    return { xhr, promise };
-  }
-
-  getElementUrl(id: string, sessionId: string, accessToken?: string) {
-    let queryParams = `?session_id=${sessionId}`;
-    if (accessToken) {
-      if (accessToken.startsWith('Bearer ')) {
-        accessToken = accessToken.slice(7);
-      }
-      queryParams += `&token=${accessToken}`;
-    }
-    return this.buildEndpoint(`/project/file/${id}${queryParams}`);
   }
 
   getLogoEndpoint(theme: string) {

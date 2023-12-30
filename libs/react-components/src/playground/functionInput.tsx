@@ -6,7 +6,7 @@ const FunctionInput = (): JSX.Element | null => {
   const { functionIndex, setFunctionIndex, playground } =
     useContext(PlaygroundContext);
 
-  const functions = playground?.generation?.functions || [];
+  const functions = playground?.prompt?.functions || [];
 
   const options = functions.map((fn, index) => ({
     label: fn.name,

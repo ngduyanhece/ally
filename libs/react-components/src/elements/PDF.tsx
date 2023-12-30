@@ -1,20 +1,23 @@
-import { type IPdfElement } from 'client-types/';
+import type { IPdfElement } from 'client-types/';
 
 interface Props {
   element: IPdfElement;
 }
 
 const PDFElement = ({ element }: Props) => {
-  if (!element.url) {
+  if (!element.url && !element.content) {
     return null;
   }
-  const url = element.page
-    ? `${element.url}#page=${element.page}`
-    : element.url;
+
   return (
     <iframe
       className={`${element.display}-pdf`}
-      src={url}
+      src={
+        element.url ||
+        URL.createObjectURL(
+          new Blob([element.content!], { type: 'application/pdf' })
+        )
+      }
       style={{ border: 'none' }}
       width="100%"
       height="100%"

@@ -23,12 +23,14 @@ export default function Variable({
   const [variableIndex, setVariableIndex] = useState<number | undefined>();
   const [styles, setStyles] = useState<React.CSSProperties>({});
 
-  const generation = playground?.generation;
+  const prompt = playground?.prompt;
 
   useEffect(() => {
-    if (generation?.inputs && decoratedText) {
-      const index = Object.keys(generation.inputs).findIndex(
-        (name) => buildVariablePlaceholder(name, 'f-string') === decoratedText
+    if (prompt?.inputs && decoratedText) {
+      const index = Object.keys(prompt.inputs).findIndex(
+        (name) =>
+          buildVariablePlaceholder(name, prompt.template_format) ===
+          decoratedText
       );
       if (index > -1) {
         setVariableIndex(index);
@@ -40,15 +42,15 @@ export default function Variable({
         });
       }
     }
-  }, [colors, decoratedText, generation]);
+  }, [colors, decoratedText, prompt]);
 
-  if (!generation) {
+  if (!prompt) {
     return null;
   }
 
   const [varName, varValue] =
     variableIndex !== undefined
-      ? Object.entries(generation.inputs || {})[variableIndex]
+      ? Object.entries(prompt.inputs || {})[variableIndex]
       : [];
 
   return (
