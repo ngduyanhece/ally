@@ -87,6 +87,7 @@
     "retcode",
     "runtimes",
     "skillset",
+    "starlette",
     "supabase",
     "sympy",
     "testrun",
