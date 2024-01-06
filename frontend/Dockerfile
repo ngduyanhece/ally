@@ -13,13 +13,18 @@ WORKDIR /app
 
 # Copy package.json and yarn.lock
 # to the /app working directory
+
 COPY package*.json pnpm-lock.yaml* ./
 
-# Install dependencies in /app
-RUN pnpm i
+#copy libs folder to /app working directory
+
+# COPY libs ./
 
 # Copy the rest of our folder into /app
 COPY . .
+
+# Install dependencies in /app
+RUN pnpm i
 
 # Ensure port 3000 is accessible to our system
 EXPOSE 3000
