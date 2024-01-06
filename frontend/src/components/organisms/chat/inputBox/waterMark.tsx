@@ -13,7 +13,7 @@ export default function WaterMark() {
   return (
     <Stack mx="auto" className="watermark">
       <a
-        href="https://github.com/Chainlit/chainlit"
+        href=""
         target="_blank"
         style={{
           display: "flex",

@@ -1,24 +1,23 @@
-import { useAuth } from 'api/auth';
-import { memo, useCallback } from 'react';
-import { useSetRecoilState } from 'recoil';
-import { v4 as uuidv4 } from 'uuid';
-
-import { Box } from '@mui/material';
+import { useAuth } from "api/auth";
+import { memo, useCallback } from "react";
+import { useSetRecoilState } from "recoil";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   FileSpec,
   IFileElement,
   IFileResponse,
   IMessage,
-  useChatInteract
-} from '@chainlit/react-client';
+  useChatInteract,
+} from "@chainlit/react-client";
+import { Box } from "@mui/material";
 
-import { chatHistoryState } from 'state/chatHistory';
-import { IProjectSettings } from 'state/project';
+import { chatHistoryState } from "state/chatHistory";
+import { IProjectSettings } from "state/project";
 
-import StopButton from '../stopButton';
-import Input from './input';
-import WaterMark from './waterMark';
+import StopButton from "../stopButton";
+import Input from "./input";
+import WaterMark from "./waterMark";
 
 interface Props {
   fileSpec: FileSpec;
@@ -34,7 +33,7 @@ const InputBox = memo(
     onFileUpload,
     onFileUploadError,
     setAutoScroll,
-    projectSettings
+    projectSettings,
   }: Props) => {
     const setChatHistory = useSetRecoilState(chatHistoryState);
 
@@ -46,10 +45,10 @@ const InputBox = memo(
       async (msg: string, files?: IFileElement[]) => {
         const message: IMessage = {
           id: uuidv4(),
-          author: user?.username || 'User',
+          author: user?.username || "User",
           authorIsUser: true,
           content: msg,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         };
 
         setChatHistory((old) => {
@@ -57,7 +56,7 @@ const InputBox = memo(
           const messages = [...(old.messages || [])];
           messages.push({
             content: msg,
-            createdAt: new Date().getTime()
+            createdAt: new Date().getTime(),
           });
 
           return {
@@ -65,7 +64,7 @@ const InputBox = memo(
             messages:
               messages.length > MAX_SIZE
                 ? messages.slice(messages.length - MAX_SIZE)
-                : messages
+                : messages,
           };
         });
 
@@ -79,10 +78,10 @@ const InputBox = memo(
       async (msg: string) => {
         const message = {
           id: uuidv4(),
-          author: user?.username || 'User',
+          author: user?.username || "User",
           authorIsUser: true,
           content: msg,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         };
 
         replyMessage(message);
@@ -98,11 +97,11 @@ const InputBox = memo(
         gap={1}
         p={2}
         sx={{
-          boxSizing: 'border-box',
-          width: '100%',
-          maxWidth: '60rem',
-          m: 'auto',
-          justifyContent: 'center'
+          boxSizing: "border-box",
+          width: "100%",
+          maxWidth: "60rem",
+          m: "auto",
+          justifyContent: "center",
         }}
       >
         <StopButton />

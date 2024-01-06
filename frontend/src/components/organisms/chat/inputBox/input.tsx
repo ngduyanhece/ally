@@ -1,28 +1,28 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import 'regenerator-runtime';
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import "regenerator-runtime";
 
-import SendIcon from '@mui/icons-material/Telegram';
-import TuneIcon from '@mui/icons-material/Tune';
-import { Box, IconButton, Stack, TextField } from '@mui/material';
-import InputAdornment from '@mui/material/InputAdornment';
+import SendIcon from "@mui/icons-material/Telegram";
+import TuneIcon from "@mui/icons-material/Tune";
+import { Box, IconButton, Stack, TextField } from "@mui/material";
+import InputAdornment from "@mui/material/InputAdornment";
 
 import {
   FileSpec,
   IFileElement,
   IFileResponse,
-  useChatData
-} from '@chainlit/react-client';
-import { Attachments } from '@chainlit/react-components';
+  useChatData,
+} from "@chainlit/react-client";
+import { Attachments } from "@chainlit/react-components";
 
-import HistoryButton from 'components/organisms/chat/history';
+import HistoryButton from "components/organisms/chat/history";
 
-import { attachmentsState } from 'state/chat';
-import { chatHistoryState } from 'state/chatHistory';
-import { chatSettingsOpenState, projectSettingsState } from 'state/project';
+import { attachmentsState } from "state/chat";
+import { chatHistoryState } from "state/chatHistory";
+import { chatSettingsOpenState, projectSettingsState } from "state/project";
 
-import UploadButton from './UploadButton';
-import SpeechButton from './speechButton';
+import UploadButton from "./UploadButton";
+import SpeechButton from "./speechButton";
 
 interface Props {
   fileSpec: FileSpec;
@@ -33,11 +33,11 @@ interface Props {
 }
 
 function getLineCount(el: HTMLDivElement) {
-  const textarea = el.querySelector('textarea');
+  const textarea = el.querySelector("textarea");
   if (!textarea) {
     return 0;
   }
-  const lines = textarea.value.split('\n');
+  const lines = textarea.value.split("\n");
   return lines.length;
 }
 
@@ -51,7 +51,7 @@ const Input = memo(
     const ref = useRef<HTMLDivElement>(null);
     const { loading, askUser, chatSettingsInputs, disabled } = useChatData();
 
-    const [value, setValue] = useState('');
+    const [value, setValue] = useState("");
     const [isComposing, setIsComposing] = useState(false);
 
     const showTextToSpeech = pSettings?.features.speech_to_text?.enabled;
@@ -61,7 +61,7 @@ const Input = memo(
         if (event.clipboardData && event.clipboardData.items) {
           const items = Array.from(event.clipboardData.items);
           items.forEach((item) => {
-            if (item.kind === 'file') {
+            if (item.kind === "file") {
               const file = item.getAsFile();
               if (file) {
                 const reader = new FileReader();
@@ -73,8 +73,8 @@ const Input = memo(
                         name: file.name,
                         type: file.type,
                         content,
-                        size: file.size
-                      }
+                        size: file.size,
+                      },
                     ]);
                   }
                 };
@@ -91,10 +91,10 @@ const Input = memo(
 
       const input = ref.current;
 
-      input.addEventListener('paste', pasteEvent);
+      input.addEventListener("paste", pasteEvent);
 
       return () => {
-        input.removeEventListener('paste', pasteEvent);
+        input.removeEventListener("paste", pasteEvent);
       };
     }, []);
 
@@ -105,7 +105,7 @@ const Input = memo(
     }, [loading, disabled]);
 
     const submit = useCallback(() => {
-      if (value === '' || disabled) {
+      if (value === "" || disabled) {
         return;
       }
       if (askUser) {
@@ -114,7 +114,7 @@ const Input = memo(
         onSubmit(value, fileElements);
       }
       setFileElements([]);
-      setValue('');
+      setValue("");
     }, [
       value,
       disabled,
@@ -122,17 +122,17 @@ const Input = memo(
       askUser,
       fileElements,
       setFileElements,
-      onSubmit
+      onSubmit,
     ]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey) {
           if (!isComposing) {
             e.preventDefault();
             submit();
           }
-        } else if (e.key === 'ArrowUp') {
+        } else if (e.key === "ArrowUp") {
           const lineCount = getLineCount(e.currentTarget as HTMLDivElement);
           if (lineCount <= 1) {
             setChatHistory((old) => ({ ...old, open: true }));
@@ -185,20 +185,20 @@ const Input = memo(
     return (
       <Stack
         sx={{
-          backgroundColor: 'background.paper',
+          backgroundColor: "background.paper",
           borderRadius: 1,
           border: (theme) => `1px solid ${theme.palette.divider}`,
-          boxShadow: 'box-shadow: 0px 2px 4px 0px #0000000D',
+          boxShadow: "box-shadow: 0px 2px 4px 0px #0000000D",
           textarea: {
-            height: '34px',
-            maxHeight: '30vh',
-            overflowY: 'auto !important',
-            resize: 'none',
-            paddingBottom: '0.75rem',
-            paddingTop: '0.75rem',
-            color: 'text.primary',
-            lineHeight: '24px'
-          }
+            height: "34px",
+            maxHeight: "30vh",
+            overflowY: "auto !important",
+            resize: "none",
+            paddingBottom: "0.75rem",
+            paddingTop: "0.75rem",
+            color: "text.primary",
+            lineHeight: "24px",
+          },
         }}
       >
         {fileElements.length > 0 ? (
@@ -206,7 +206,7 @@ const Input = memo(
             sx={{
               mt: 2,
               mx: 2,
-              padding: '2px'
+              padding: "2px",
             }}
           >
             <Attachments
@@ -223,7 +223,7 @@ const Input = memo(
           multiline
           variant="standard"
           autoComplete="false"
-          placeholder={'Type your message here...'}
+          placeholder={"Type your message here..."}
           disabled={disabled}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -235,7 +235,7 @@ const Input = memo(
             disableUnderline: true,
             startAdornment: (
               <InputAdornment
-                sx={{ ml: 1, color: 'text.secondary' }}
+                sx={{ ml: 1, color: "text.secondary" }}
                 position="start"
               >
                 {startAdornment}
@@ -244,11 +244,11 @@ const Input = memo(
             endAdornment: (
               <InputAdornment
                 position="end"
-                sx={{ mr: 1, color: 'text.secondary' }}
+                sx={{ mr: 1, color: "text.secondary" }}
               >
                 {endAdornment}
               </InputAdornment>
-            )
+            ),
           }}
         />
       </Stack>

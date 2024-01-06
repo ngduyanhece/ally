@@ -1,24 +1,24 @@
-import { useFormik } from 'formik';
-import mapValues from 'lodash/mapValues';
-import { useRecoilState } from 'recoil';
+import { useFormik } from "formik";
+import mapValues from "lodash/mapValues";
+import { useRecoilState } from "recoil";
 
 import {
   Box,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle
-} from '@mui/material';
+  DialogTitle,
+} from "@mui/material";
 
-import { useChatData, useChatInteract } from '@chainlit/react-client';
+import { useChatData, useChatInteract } from "@chainlit/react-client";
 import {
   AccentButton,
   FormInput,
   RegularButton,
-  TFormInputValue
-} from '@chainlit/react-components';
+  TFormInputValue,
+} from "@chainlit/react-components";
 
-import { chatSettingsOpenState } from 'state/project';
+import { chatSettingsOpenState } from "state/project";
 
 export default function ChatSettingsModal() {
   const { chatSettingsValue, chatSettingsInputs, chatSettingsDefaultValue } =
@@ -32,13 +32,14 @@ export default function ChatSettingsModal() {
   const formik = useFormik({
     initialValues: chatSettingsValue,
     enableReinitialize: true,
-    onSubmit: async () => undefined
+    onSubmit: async () => undefined,
   });
 
   const handleClose = () => setChatSettingsOpen(false);
   const handleConfirm = () => {
     const values = mapValues(formik.values, (x: TFormInputValue) =>
-      x !== '' ? x : null
+      // strip all trailing spaces from values
+      typeof x === "string" ? x.trimEnd() : null
     );
     updateChatSettings(values);
 
@@ -55,19 +56,19 @@ export default function ChatSettingsModal() {
       id="chat-settings-dialog"
       PaperProps={{
         sx: {
-          backgroundImage: 'none'
-        }
+          backgroundImage: "none",
+        },
       }}
     >
-      <DialogTitle id="alert-dialog-title">{'Settings panel'}</DialogTitle>
+      <DialogTitle id="alert-dialog-title">{"Settings panel"}</DialogTitle>
       <DialogContent>
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: '20vw',
-            maxHeight: '70vh',
-            gap: '15px'
+            display: "flex",
+            flexDirection: "column",
+            minWidth: "20vw",
+            maxHeight: "70vh",
+            gap: "15px",
           }}
         >
           {chatSettingsInputs.map((input: any) => (
@@ -77,7 +78,7 @@ export default function ChatSettingsModal() {
                 ...input,
                 value: formik.values[input.id],
                 onChange: formik.handleChange,
-                setField: formik.setFieldValue
+                setField: formik.setFieldValue,
               }}
             />
           ))}
@@ -87,7 +88,7 @@ export default function ChatSettingsModal() {
         <AccentButton onClick={handleReset} color="primary" variant="outlined">
           Reset
         </AccentButton>
-        <div style={{ flex: '1 0 0' }} />
+        <div style={{ flex: "1 0 0" }} />
         <RegularButton onClick={handleClose}>Cancel</RegularButton>
         <AccentButton
           id="confirm"

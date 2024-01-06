@@ -1,27 +1,27 @@
-import { wsEndpoint } from 'api';
-import { useAuth } from 'api/auth';
-import { useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { RouterProvider } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
-import { router } from 'router';
+import { wsEndpoint } from "api";
+import { useAuth } from "api/auth";
+import { useEffect } from "react";
+import { Toaster } from "react-hot-toast";
+import { RouterProvider } from "react-router-dom";
+import { useRecoilValue } from "recoil";
+import { router } from "router";
 
-import { Box, GlobalStyles } from '@mui/material';
-import { Theme, ThemeProvider } from '@mui/material/styles';
+import { Box, GlobalStyles } from "@mui/material";
+import { Theme, ThemeProvider } from "@mui/material/styles";
 
-import { useChatSession } from '@chainlit/react-client';
-import { makeTheme } from '@chainlit/react-components/theme';
+import { useChatSession } from "@chainlit/react-client";
+import { makeTheme } from "@chainlit/react-components/theme";
 
-import Hotkeys from 'components/Hotkeys';
-import SettingsModal from 'components/molecules/settingsModal';
-import ChatSettingsModal from 'components/organisms/chat/settings';
-import PromptPlayground from 'components/organisms/playground';
+import Hotkeys from "components/Hotkeys";
+import SettingsModal from "components/molecules/settingsModal";
+import ChatSettingsModal from "components/organisms/chat/settings";
+import PromptPlayground from "components/organisms/playground";
 
-import { projectSettingsState } from 'state/project';
-import { settingsState } from 'state/settings';
-import { userEnvState } from 'state/user';
+import { projectSettingsState } from "state/project";
+import { settingsState } from "state/settings";
+import { userEnvState } from "state/user";
 
-import './App.css';
+import "./App.css";
 
 type Primary = {
   dark?: string;
@@ -91,7 +91,7 @@ function App() {
       connect({
         wsEndpoint,
         userEnv,
-        accessToken
+        accessToken,
       });
     }
   }, [userEnv, accessToken, isAuthenticated, connect, chatProfileOk]);
@@ -105,31 +105,31 @@ function App() {
     <ThemeProvider theme={theme}>
       <GlobalStyles
         styles={{
-          body: { backgroundColor: theme.palette.background.default }
+          body: { backgroundColor: theme.palette.background.default },
         }}
       />
       <Toaster
         toastOptions={{
-          className: 'toast',
+          className: "toast",
           style: {
             maxWidth: 500,
-            fontFamily: 'Inter',
+            fontFamily: "Inter",
             background: theme.palette.background.paper,
             border: `1px solid ${theme.palette.divider}`,
             padding: theme.spacing(1),
             color: theme.palette.text.primary,
             boxShadow:
-              theme.palette.mode === 'light'
-                ? '0px 2px 4px 0px #0000000D'
-                : '0px 10px 10px 0px #0000000D'
-          }
+              theme.palette.mode === "light"
+                ? "0px 2px 4px 0px #0000000D"
+                : "0px 10px 10px 0px #0000000D",
+          },
         }}
       />
       <Box
         display="flex"
         height="100vh"
         width="100vw"
-        sx={{ overflowX: 'hidden' }}
+        sx={{ overflowX: "hidden" }}
       >
         <PromptPlayground />
         <ChatSettingsModal />
