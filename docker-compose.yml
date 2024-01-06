@@ -1,15 +1,36 @@
 version: "3"
 
 services:
-  backend-core:
-    env_file:
-      - ./dev.env
+  frontend:
+    pull_policy: never
     build:
-      context: ./
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-v2.0
+    depends_on:
+      - backend-core
+    restart: always
+    ports:
+      - 3000:3000
+
+  backend-core:
+    pull_policy: never
+    env_file:
+      - dev.env
+    build:
+      context: ally
       dockerfile: Dockerfile
     container_name: backend-core-v2.0
-    restart: always
     volumes:
-      - ./:/code/
+      - ./ally/:/code/
+    command:
+      - "uvicorn"
+      - "main:app"
+      - "--reload"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "5050"
+    restart: always
     ports:
       - 5050:5050

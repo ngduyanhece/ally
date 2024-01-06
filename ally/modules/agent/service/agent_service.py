@@ -1,7 +1,7 @@
 
 
-from ally.modules.agent.entity.agent_entity import AgentEntity
-from ally.modules.agent.repository.agents import Agents
+from modules.agent.entity.agent_entity import AgentEntity
+from modules.agent.repository.agents import Agents
 
 
 class AgentService:
@@ -14,6 +14,9 @@ class AgentService:
 
 	def get_agent_by_id(self, agent_id) -> AgentEntity | None:
 		return self.agent_repository.get_agent_by_id(agent_id)
+	
+	def get_agent_by_name(self, agent_name) -> AgentEntity | None:
+		return self.agent_repository.get_agent_by_name(agent_name)
 	
 	def update_agent_by_id(self, agent_id, agent) -> AgentEntity | None:
 		return self.agent_repository.update_agent_by_id(agent_id, agent)

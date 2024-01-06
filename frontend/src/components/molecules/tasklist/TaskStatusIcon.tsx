@@ -1,21 +1,21 @@
-import { Box, CircularProgress, SvgIcon } from '@mui/material';
+import { Box, CircularProgress, SvgIcon } from "@mui/material";
 
-import { green, grey, primary, white } from '@chainlit/react-components/theme';
+import { green, grey, primary, white } from "@chainlit/react-components/theme";
 
-import type { ITask } from './Task';
+import type { ITask } from "./Task";
 
-export const TaskStatusIcon = ({ status }: { status: ITask['status'] }) => {
-  if (status === 'running') {
+export const TaskStatusIcon = ({ status }: { status: ITask["status"] }) => {
+  if (status === "running") {
     return (
       <Box
         sx={{
-          marginTop: '-2px',
-          width: '24px',
-          height: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: grey[700]
+          marginTop: "-2px",
+          width: "24px",
+          height: "24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: grey[700],
         }}
       >
         <CircularProgress color="inherit" size={18} />
@@ -28,11 +28,11 @@ export const TaskStatusIcon = ({ status }: { status: ITask['status'] }) => {
       width={24}
       height={24}
       sx={{
-        marginTop: '-2px',
-        fill: 'none'
+        marginTop: "-2px",
+        fill: "none",
       }}
     >
-      {status === 'done' && (
+      {status === "done" && (
         <>
           <circle cx={12} cy={12} r={9} fill={green[500]} />
           <path
@@ -44,10 +44,10 @@ export const TaskStatusIcon = ({ status }: { status: ITask['status'] }) => {
           />
         </>
       )}
-      {status === 'ready' && (
+      {status === "ready" && (
         <circle cx={12} cy={12} r={8.25} stroke={grey[700]} strokeWidth={1.5} />
       )}
-      {status === 'failed' && (
+      {status === "failed" && (
         <>
           <circle cx={12} cy={12} r={9} fill={primary[500]} />
           <path

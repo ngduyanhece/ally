@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from uuid import UUID
 
-from ally.modules.api_key.entity.api_key import ApiKey
+from modules.api_key.entity.api_key import ApiKey
 
 
 class ApiKeysInterface(ABC):

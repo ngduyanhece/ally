@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from ally.modules.user.dto.inputs import UserSignInProperties
-from ally.modules.user.repository.users import Users
+from modules.user.dto.inputs import UserSignInProperties
+from modules.user.repository.users import Users
 
 
 class UserService:

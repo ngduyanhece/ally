@@ -1,9 +1,9 @@
 import { apiClient } from 'api';
 import { useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { toast } from 'sonner';
 
-import { IGeneration, accessTokenState } from '@chainlit/react-client';
+import { IPrompt, accessTokenState } from '@chainlit/react-client';
 import {
   IPlaygroundContext,
   PromptPlayground
@@ -28,7 +28,7 @@ export default function PlaygroundWrapper() {
   const [promptMode, setPromptMode] = useRecoilState(modeState);
 
   const shoulFetchProviders =
-    playground?.generation && !playground?.providers?.length;
+    playground?.prompt && !playground?.providers?.length;
 
   useLLMProviders(shoulFetchProviders);
 
@@ -50,12 +50,12 @@ export default function PlaygroundWrapper() {
 
   const createCompletion = useCallback(
     (
-      generation: IGeneration,
+      prompt: IPrompt,
       controller: AbortController,
       cb: (done: boolean, token: string) => void
     ) => {
-      return apiClient.getGeneration(
-        generation,
+      return apiClient.getCompletion(
+        prompt,
         userEnv,
         controller,
         accessToken,

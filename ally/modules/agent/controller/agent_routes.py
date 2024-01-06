@@ -2,24 +2,25 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-
-from ally.logger import get_logger
-from ally.middlewares.auth.auth_bearer import AuthBearer, get_current_user
-from ally.modules.agent.dto.inputs import (AgentUpdatableProperties,
-                                           CreateAgentProperties)
-from ally.modules.agent.entity.agent_entity import (AgentEntity, RoleEnum,
-                                                    UserAgentEntity)
-from ally.modules.agent.service.agent_authorization_service import \
+from logger import get_logger
+from middlewares.auth.auth_bearer import AuthBearer, get_current_user
+from modules.agent.dto.inputs import (AgentUpdatableProperties,
+                                      CreateAgentProperties)
+from modules.agent.entity.agent_entity import (AgentEntity, RoleEnum,
+                                               UserAgentEntity)
+from modules.agent.service.agent_authorization_service import \
     has_agent_authorization
-from ally.modules.agent.service.agent_service import AgentService
-from ally.modules.agent.service.agent_user_service import AgentUserService
-from ally.modules.user.entity.user_identity import UserIdentity
+from modules.agent.service.agent_service import AgentService
+from modules.agent.service.agent_tool_service import AgentToolService
+from modules.agent.service.agent_user_service import AgentUserService
+from modules.user.entity.user_identity import UserIdentity
 
 logger = get_logger(__name__)
 agent_router = APIRouter()
 
 agent_service = AgentService()
 agent_user_service = AgentUserService()
+agent_tool_service = AgentToolService()
 
 @agent_router.post("/agents/", dependencies=[Depends(AuthBearer())])
 async def create_new_agent(
@@ -80,6 +81,26 @@ async def update_agent(
 	if response is None:
 		raise HTTPException(status_code=404, detail="Agent not found")
 	agent_service.update_agent_last_update_time(agent_id)
+	return response
+
+@agent_router.put(
+	"/agents/{agent_id}/tools",
+	dependencies=[
+		Depends(AuthBearer()),
+		Depends(
+			has_agent_authorization(
+				required_roles=[RoleEnum.Owner, RoleEnum.Editor]
+			)
+		),
+	],
+)
+async def update_tools_for_agent(
+	agent_id: str,
+):
+	""" Update tools for a specific agent"""
+	response = await agent_tool_service.update_tools_for_agent(agent_id)
+	if response is None:
+		raise HTTPException(status_code=404, detail="Agent not found")
 	return response
 
 @agent_router.delete(

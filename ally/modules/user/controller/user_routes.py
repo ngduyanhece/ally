@@ -1,12 +1,11 @@
 
 from fastapi import APIRouter, Depends
-
-from ally.logger import get_logger
-from ally.middlewares.auth.auth_bearer import AuthBearer, get_current_user
-from ally.modules.user.dto.inputs import (UserSignInProperties,
-                                          UserUpdatableProperties)
-from ally.modules.user.entity.user_identity import UserIdentity
-from ally.modules.user.service.user_service import UserService
+from logger import get_logger
+from middlewares.auth.auth_bearer import AuthBearer, get_current_user
+from modules.user.dto.inputs import (UserSignInProperties,
+                                     UserUpdatableProperties)
+from modules.user.entity.user_identity import UserIdentity
+from modules.user.service.user_service import UserService
 
 logger = get_logger(__name__)
 

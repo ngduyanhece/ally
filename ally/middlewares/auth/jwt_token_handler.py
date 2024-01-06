@@ -1,11 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
+from core.settings import settings
 from jose import jwt
 from jose.exceptions import JWTError
-
-from ally.core.settings import settings
-from ally.modules.user.entity.user_identity import UserIdentity
+from modules.user.entity.user_identity import UserIdentity
 
 SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = "HS256"

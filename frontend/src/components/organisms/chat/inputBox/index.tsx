@@ -3,13 +3,17 @@ import { memo, useCallback } from "react";
 import { useSetRecoilState } from "recoil";
 import { v4 as uuidv4 } from "uuid";
 
+import {
+  FileSpec,
+  IFileElement,
+  IFileResponse,
+  IMessage,
+  useChatInteract,
+} from "@chainlit/react-client";
 import { Box } from "@mui/material";
 
-// import { FileSpec, IStep, useChatInteract } from "@chainlit/react-client";
-
-import { IAttachment } from "state/chat";
+import { chatHistoryState } from "state/chatHistory";
 import { IProjectSettings } from "state/project";
-import { inputHistoryState } from "state/userInputHistory";
 
 import StopButton from "../stopButton";
 import Input from "./input";
@@ -17,7 +21,7 @@ import WaterMark from "./waterMark";
 
 interface Props {
   fileSpec: FileSpec;
-  onFileUpload: (payload: File[]) => void;
+  onFileUpload: (payload: IFileResponse[]) => void;
   onFileUploadError: (error: string) => void;
   setAutoScroll: (autoScroll: boolean) => void;
   projectSettings?: IProjectSettings;
@@ -31,58 +35,52 @@ const InputBox = memo(
     setAutoScroll,
     projectSettings,
   }: Props) => {
-    const setInputHistory = useSetRecoilState(inputHistoryState);
+    const setChatHistory = useSetRecoilState(chatHistoryState);
 
     const { user } = useAuth();
     const { sendMessage, replyMessage } = useChatInteract();
     // const tokenCount = useRecoilValue(tokenCountState);
 
     const onSubmit = useCallback(
-      async (msg: string, attachments?: IAttachment[]) => {
-        const message: IStep = {
-          threadId: "",
+      async (msg: string, files?: IFileElement[]) => {
+        const message: IMessage = {
           id: uuidv4(),
-          name: user?.identifier || "User",
-          type: "user_message",
-          output: msg,
+          author: user?.username || "User",
+          authorIsUser: true,
+          content: msg,
           createdAt: new Date().toISOString(),
         };
 
-        setInputHistory((old) => {
+        setChatHistory((old) => {
           const MAX_SIZE = 50;
-          const inputs = [...(old.inputs || [])];
-          inputs.push({
+          const messages = [...(old.messages || [])];
+          messages.push({
             content: msg,
             createdAt: new Date().getTime(),
           });
 
           return {
             ...old,
-            inputs:
-              inputs.length > MAX_SIZE
-                ? inputs.slice(inputs.length - MAX_SIZE)
-                : inputs,
+            messages:
+              messages.length > MAX_SIZE
+                ? messages.slice(messages.length - MAX_SIZE)
+                : messages,
           };
         });
 
-        const fileReferences = attachments
-          ?.filter((a) => !!a.serverId)
-          .map((a) => ({ id: a.serverId! }));
-
         setAutoScroll(true);
-        sendMessage(message, fileReferences);
+        sendMessage(message, files);
       },
       [user, projectSettings, sendMessage]
     );
 
     const onReply = useCallback(
       async (msg: string) => {
-        const message: IStep = {
-          threadId: "",
+        const message = {
           id: uuidv4(),
-          name: user?.identifier || "User",
-          type: "user_message",
-          output: msg,
+          author: user?.username || "User",
+          authorIsUser: true,
+          content: msg,
           createdAt: new Date().toISOString(),
         };
 

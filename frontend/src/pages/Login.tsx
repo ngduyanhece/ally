@@ -1,18 +1,18 @@
-import { apiClient } from 'api';
-import { useAuth } from 'api/auth';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { apiClient } from "api";
+import { useAuth } from "api/auth";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { AuthLogin } from '@chainlit/react-components';
+import { AuthLogin } from "@chainlit/react-components";
 
-import { Logo } from 'components/atoms/logo';
+import { Logo } from "components/atoms/logo";
 
-import { useQuery } from 'hooks/query';
+import { useQuery } from "hooks/query";
 
 export default function Login() {
   const query = useQuery();
   const { data: config, setAccessToken, user } = useAuth();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -20,7 +20,7 @@ export default function Login() {
     try {
       const json = await apiClient.headerAuth();
       setAccessToken(json.access_token);
-      navigate('/');
+      navigate("/");
     } catch (error: any) {
       setError(error.message);
     }
@@ -32,8 +32,8 @@ export default function Login() {
     callbackUrl: string
   ) => {
     const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
+    formData.append("username", email);
+    formData.append("password", password);
 
     try {
       const json = await apiClient.passwordAuth(formData);
@@ -45,7 +45,7 @@ export default function Login() {
   };
 
   useEffect(() => {
-    setError(query.get('error') || '');
+    setError(query.get("error") || "");
   }, [query]);
 
   useEffect(() => {
@@ -53,13 +53,13 @@ export default function Login() {
       return;
     }
     if (!config.requireLogin) {
-      navigate('/');
+      navigate("/");
     }
     if (config.headerAuth) {
       handleHeaderAuth();
     }
     if (user) {
-      navigate('/');
+      navigate("/");
     }
   }, [config, user]);
 
@@ -73,7 +73,7 @@ export default function Login() {
       onOAuthSignIn={async (provider: string) => {
         window.location.href = apiClient.getOAuthEndpoint(provider);
       }}
-      renderLogo={<Logo style={{ maxWidth: '60%', maxHeight: '90px' }} />}
+      renderLogo={<Logo style={{ maxWidth: "100%", maxHeight: "200px" }} />}
     />
   );
 }

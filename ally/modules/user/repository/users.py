@@ -1,9 +1,9 @@
-from ally.core.settings import get_supabase_client
-from ally.logger import get_logger
-from ally.middlewares.auth.jwt_token_handler import create_access_token
-from ally.modules.user.dto.inputs import UserSignInProperties
-from ally.modules.user.entity.user_identity import UserIdentity
-from ally.modules.user.repository.users_interface import UsersInterface
+from core.settings import get_supabase_client
+from logger import get_logger
+from middlewares.auth.jwt_token_handler import create_access_token
+from modules.user.dto.inputs import UserSignInProperties
+from modules.user.entity.user_identity import UserIdentity
+from modules.user.repository.users_interface import UsersInterface
 
 logger = get_logger(__name__)
 

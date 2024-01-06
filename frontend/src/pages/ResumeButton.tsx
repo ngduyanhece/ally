@@ -1,6 +1,6 @@
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { toast } from 'sonner';
 
 import { Box, Button } from '@mui/material';
 
@@ -11,22 +11,22 @@ import WaterMark from 'components/organisms/chat/inputBox/waterMark';
 import { projectSettingsState } from 'state/project';
 
 interface Props {
-  threadId?: string;
+  conversationId?: string;
 }
 
-export default function ResumeButton({ threadId }: Props) {
+export default function ResumeButton({ conversationId }: Props) {
   const navigate = useNavigate();
   const pSettings = useRecoilValue(projectSettingsState);
   const { clear, setIdToResume } = useChatInteract();
 
-  if (!threadId || !pSettings?.threadResumable) {
+  if (!conversationId || !pSettings?.conversationResumable) {
     return;
   }
 
   const onClick = () => {
     clear();
-    setIdToResume(threadId!);
-    toast.success('Chat resumed!');
+    setIdToResume(conversationId!);
+    toast.success('Conversation resumed!');
     navigate('/');
   };
 
@@ -44,8 +44,8 @@ export default function ResumeButton({ threadId }: Props) {
         justifyContent: 'center'
       }}
     >
-      <Button id="resumeThread" onClick={onClick} variant="contained">
-        Resume chat
+      <Button onClick={onClick} variant="contained">
+        Resume conversation
       </Button>
       <WaterMark />
     </Box>

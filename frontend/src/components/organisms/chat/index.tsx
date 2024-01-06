@@ -1,105 +1,52 @@
-import { apiClient } from 'api';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { v4 as uuidv4 } from "uuid";
 
-import { Alert, Box } from '@mui/material';
+import { Alert, Box } from "@mui/material";
 
 import {
-  threadHistoryState,
+  IFileResponse,
+  conversationsHistoryState,
   useChatData,
-  useChatInteract
-} from '@chainlit/react-client';
-import { ErrorBoundary, useUpload } from '@chainlit/react-components';
+} from "@chainlit/react-client";
+import { ErrorBoundary, useUpload } from "@chainlit/react-components";
 
-import SideView from 'components/atoms/element/sideView';
-import ChatProfiles from 'components/molecules/chatProfiles';
-import { TaskList } from 'components/molecules/tasklist/TaskList';
+import SideView from "components/atoms/element/sideView";
+import ChatProfiles from "components/molecules/chatProfiles";
+import { TaskList } from "components/molecules/tasklist/TaskList";
 
-import { IAttachment, attachmentsState } from 'state/chat';
-import { projectSettingsState, sideViewState } from 'state/project';
+import { attachmentsState } from "state/chat";
+import { projectSettingsState, sideViewState } from "state/project";
 
-import Messages from './Messages';
-import DropScreen from './dropScreen';
-import InputBox from './inputBox';
+import Messages from "./Messages";
+import DropScreen from "./dropScreen";
+import InputBox from "./inputBox";
+import UpdateMemory from "./updateMemory";
+import UpdateToolButton from "./updateToolButton";
 
 const Chat = () => {
   const projectSettings = useRecoilValue(projectSettingsState);
   const setAttachments = useSetRecoilState(attachmentsState);
-  const setThreads = useSetRecoilState(threadHistoryState);
+  const setConversations = useSetRecoilState(conversationsHistoryState);
   const sideViewElement = useRecoilValue(sideViewState);
 
   const [autoScroll, setAutoScroll] = useState(true);
   const { error, disabled } = useChatData();
-  const { uploadFile } = useChatInteract();
 
-  const fileSpec = useMemo(() => ({ max_size_mb: 500 }), []);
+  const fileSpec = useMemo(() => ({ max_size_mb: 1000 }), []);
 
-  const onFileUpload = useCallback((payloads: File[]) => {
-    const attachements: IAttachment[] = payloads.map((file) => {
-      const id = uuidv4();
-
-      const { xhr, promise } = uploadFile(apiClient, file, (progress) => {
-        setAttachments((prev) =>
-          prev.map((attachment) => {
-            if (attachment.id === id) {
-              return {
-                ...attachment,
-                uploadProgress: progress
-              };
-            }
-            return attachment;
-          })
-        );
-      });
-
-      promise
-        .then((res) => {
-          setAttachments((prev) =>
-            prev.map((attachment) => {
-              if (attachment.id === id) {
-                return {
-                  ...attachment,
-                  // Update with the server ID
-                  serverId: res.id,
-                  uploaded: true,
-                  uploadProgress: 100,
-                  cancel: undefined
-                };
-              }
-              return attachment;
-            })
-          );
-        })
-        .catch((error) => {
-          toast.error(`Failed to upload ${file.name}: ${error.message}`);
-          setAttachments((prev) =>
-            prev.filter((attachment) => attachment.id !== id)
-          );
-        });
-
-      return {
-        id,
-        type: file.type,
-        name: file.name,
-        size: file.size,
-        uploadProgress: 0,
-        cancel: () => {
-          toast.info(`Cancelled upload of ${file.name}`);
-          xhr.abort();
-          setAttachments((prev) =>
-            prev.filter((attachment) => attachment.id !== id)
-          );
-        },
-        remove: () => {
-          setAttachments((prev) =>
-            prev.filter((attachment) => attachment.id !== id)
-          );
-        }
-      };
-    });
-    setAttachments((prev) => prev.concat(attachements));
+  const onFileUpload = useCallback((payloads: IFileResponse[]) => {
+    const fileElements = payloads.map((file) => ({
+      id: uuidv4(),
+      type: "file" as const,
+      display: "inline" as const,
+      name: file.name,
+      mime: file.type,
+      content: file.content,
+    }));
+    setAttachments((prev) => prev.concat(fileElements));
+    console.log("fileElements", fileElements);
   }, []);
 
   const onFileUploadError = useCallback(
@@ -111,13 +58,13 @@ const Chat = () => {
     spec: fileSpec,
     onResolved: onFileUpload,
     onError: onFileUploadError,
-    options: { noClick: true }
+    options: { noClick: true },
   });
 
   useEffect(() => {
-    setThreads((prev) => ({
+    setConversations((prev) => ({
       ...prev,
-      currentThreadId: undefined
+      currentConversationId: undefined,
     }));
   }, []);
 
@@ -127,7 +74,7 @@ const Chat = () => {
   return (
     <Box
       {...(enableMultiModalUpload
-        ? upload?.getRootProps({ className: 'dropzone' })
+        ? upload?.getRootProps({ className: "dropzone" })
         : {})}
       // Disable the onFocus and onBlur events in react-dropzone to avoid interfering with child trigger events
       onBlur={undefined}
@@ -148,10 +95,10 @@ const Chat = () => {
         {error && (
           <Box
             sx={{
-              width: '100%',
-              maxWidth: '60rem',
-              mx: 'auto',
-              my: 2
+              width: "100%",
+              maxWidth: "60rem",
+              mx: "auto",
+              my: 2,
             }}
           >
             <Alert sx={{ mx: 2 }} id="session-error" severity="error">
@@ -167,6 +114,16 @@ const Chat = () => {
             projectSettings={projectSettings}
             setAutoScroll={setAutoScroll}
           />
+          {/* <Box
+            display="flex"
+            flexDirection="row"
+            justifyItems="flex-start"
+            justifyContent="flex-end"
+            alignItems="first baseline"
+          > */}
+          <UpdateToolButton />
+          <UpdateMemory />
+          {/* {chatProfile !== "ally" && <DeleteAgentButton />} */}
           <InputBox
             fileSpec={fileSpec}
             onFileUpload={onFileUpload}
@@ -174,6 +131,7 @@ const Chat = () => {
             setAutoScroll={setAutoScroll}
             projectSettings={projectSettings}
           />
+          {/* </Box> */}
         </ErrorBoundary>
       </SideView>
       {sideViewElement ? null : <TaskList isMobile={false} />}

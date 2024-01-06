@@ -3,12 +3,11 @@ from secrets import token_hex
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, status
-
-from ally.logger import get_logger
-from ally.middlewares.auth.auth_bearer import AuthBearer, get_current_user
-from ally.modules.api_key.entity.api_key import ApiKey
-from ally.modules.api_key.service.api_key_service import APIKeyService
-from ally.modules.user.entity.user_identity import UserIdentity
+from logger import get_logger
+from middlewares.auth.auth_bearer import AuthBearer, get_current_user
+from modules.api_key.entity.api_key import ApiKey
+from modules.api_key.service.api_key_service import APIKeyService
+from modules.user.entity.user_identity import UserIdentity
 
 logger = get_logger(__name__)
 

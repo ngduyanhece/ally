@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from ally.modules.agent.dto.inputs import (AgentUpdatableProperties,
-                                           CreateAgentProperties)
-from ally.modules.agent.entity.agent_entity import AgentEntity
+from modules.agent.dto.inputs import (AgentUpdatableProperties,
+                                      CreateAgentProperties)
+from modules.agent.entity.agent_entity import AgentEntity
 
 
 class AgentsInterface(ABC):
@@ -40,5 +40,12 @@ class AgentsInterface(ABC):
 	def get_agent_by_id(self, agent_id: str) -> AgentEntity | None:
 		"""
 		Get an agent by id
+		"""
+		pass
+
+	@abstractmethod
+	def get_agent_by_name(self, agent_name: str) -> AgentEntity | None:
+		"""
+		Get an agent by name
 		"""
 		pass

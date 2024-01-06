@@ -1,9 +1,9 @@
 from typing import List
 from uuid import UUID
 
-from ally.core.settings import get_supabase_client
-from ally.modules.agent.entity.agent_entity import AgentUser, UserAgentEntity
-from ally.modules.agent.repository.interfaces.agents_users_interface import \
+from core.settings import get_supabase_client
+from modules.agent.entity.agent_entity import AgentUser, UserAgentEntity
+from modules.agent.repository.interfaces.agents_users_interface import \
     AgentUserInterface
 
 
@@ -20,7 +20,7 @@ class AgentsUsers(AgentUserInterface):
 		response = (
 			self.db.from_("agents_users")
 			.select(
-				"agent_id, rights, agents (id, name, instructions, model)"
+				"agent_id, rights, agents (id, name, description, icon, instructions, model)"
 			)
 			.filter("user_id", "eq", user_id)
 			.execute()
@@ -31,6 +31,8 @@ class AgentsUsers(AgentUserInterface):
 				UserAgentEntity(
 					id=agent["agents"]["id"],
 					name=agent["agents"]["name"],
+					description=agent["agents"]["description"],
+					icon=agent["agents"]["icon"],
 					instructions=agent["agents"]["instructions"],
 					model=agent["agents"]["model"],
 					rights=agent["rights"]
@@ -45,7 +47,7 @@ class AgentsUsers(AgentUserInterface):
 		response = (
 			self.db.from_("agents_users")
 			.select(
-				"agent_id, rights, agents (id, name, instructions, model)"
+				"agent_id, rights, agents (id, name, description, icon, instructions, model)"
 			)
 			.filter("user_id", "eq", user_id)
 			.filter("agent_id", "eq", agent_id)
@@ -57,6 +59,8 @@ class AgentsUsers(AgentUserInterface):
 		return UserAgentEntity(
 			id=agent["agents"]["id"],
 			name=agent["agents"]["name"],
+			description=agent["agents"]["description"],
+			icon=agent["agents"]["icon"],
 			instructions=agent["agents"]["instructions"],
 			model=agent["agents"]["model"],
 			rights=agent["rights"]

@@ -14,18 +14,18 @@ import {
   Typography
 } from '@mui/material';
 
-import { UserInput } from '@chainlit/react-client';
+import { MessageHistory } from '@chainlit/react-client';
 import { grey } from '@chainlit/react-components/theme';
 
-import { inputHistoryState } from 'state/userInputHistory';
+import { chatHistoryState } from 'state/chatHistory';
 
 interface Props {
   disabled?: boolean;
   onClick: (content: string) => void;
 }
 
-function buildInputHistory(userInputs: UserInput[]) {
-  const inputHistory: Record<
+function buildHistory(historyMessages: MessageHistory[]) {
+  const history: Record<
     string,
     {
       key: number | string;
@@ -34,48 +34,48 @@ function buildInputHistory(userInputs: UserInput[]) {
     }[]
   > = {};
 
-  const reversedHistory = cloneDeep(userInputs).reverse();
+  const reversedHistory = cloneDeep(historyMessages).reverse();
 
-  reversedHistory?.forEach((userInput) => {
-    const { createdAt, content } = userInput;
+  reversedHistory?.forEach((hm) => {
+    const { createdAt, content } = hm;
     const dateOptions: Intl.DateTimeFormatOptions = {
       day: 'numeric',
       month: 'numeric',
       year: 'numeric'
     };
     const date = new Date(createdAt).toLocaleDateString(undefined, dateOptions);
-    if (!inputHistory[date]) {
-      inputHistory[date] = [];
+    if (!history[date]) {
+      history[date] = [];
     }
 
     const timeOptions: Intl.DateTimeFormatOptions = {
       hour: 'numeric',
       minute: 'numeric'
     };
-    inputHistory[date].push({
+    history[date].push({
       key: createdAt,
       hour: new Date(createdAt).toLocaleTimeString(undefined, timeOptions),
       content: content
     });
   });
 
-  return inputHistory;
+  return history;
 }
 
-export default function InputHistoryButton({ disabled, onClick }: Props) {
-  const [inputHistory, setInputHistory] = useRecoilState(inputHistoryState);
+export default function HistoryButton({ disabled, onClick }: Props) {
+  const [chatHistory, setChatHistory] = useRecoilState(chatHistoryState);
 
   const ref = useRef<any>();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  if (inputHistory.open && !anchorEl) {
+  if (chatHistory.open && !anchorEl) {
     if (ref.current) {
       setAnchorEl(ref.current);
     }
   }
 
   const toggleChatHistoryMenu = (open: boolean) =>
-    setInputHistory((old) => ({ ...old, open }));
+    setChatHistory((old) => ({ ...old, open }));
 
   const header = (
     // @ts-ignore
@@ -91,10 +91,10 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
         color="text.primary"
         sx={{ fontSize: '14px', fontWeight: 700 }}
       >
-        Last inputs
+        Last messages
       </Typography>
       <IconButton
-        onClick={() => setInputHistory((old) => ({ ...old, inputs: [] }))}
+        onClick={() => setChatHistory((old) => ({ ...old, messages: [] }))}
       >
         <AutoDelete />
       </IconButton>
@@ -102,7 +102,7 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
   );
 
   const empty =
-    inputHistory?.inputs.length === 0 ? (
+    chatHistory?.messages.length === 0 ? (
       // @ts-ignore
       <div key="empty" id="history-empty" disabled>
         <Typography
@@ -119,7 +119,7 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
       </div>
     ) : null;
 
-  const loading = !inputHistory.inputs ? (
+  const loading = !chatHistory.messages ? (
     // @ts-ignore
     <div key="loading" id="history-loading" disabled>
       <Typography
@@ -138,8 +138,8 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
 
   const menuEls: (JSX.Element | null)[] = [header, empty, loading];
 
-  if (inputHistory.inputs) {
-    const history = buildInputHistory(inputHistory.inputs);
+  if (chatHistory.messages) {
+    const history = buildHistory(chatHistory.messages);
     Object.keys(history).forEach((date) => {
       menuEls.push(
         // @ts-ignore
@@ -207,7 +207,7 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
     <Menu
       autoFocus
       anchorEl={anchorEl}
-      open={inputHistory.open}
+      open={chatHistory.open}
       onClose={() => toggleChatHistoryMenu(false)}
       PaperProps={{
         sx: {
@@ -244,7 +244,7 @@ export default function InputHistoryButton({ disabled, onClick }: Props) {
           <IconButton
             color="inherit"
             disabled={disabled}
-            onClick={() => toggleChatHistoryMenu(!inputHistory.open)}
+            onClick={() => toggleChatHistoryMenu(!chatHistory.open)}
             ref={ref}
           >
             <KeyboardDoubleArrowUpIcon />

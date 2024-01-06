@@ -1,11 +1,16 @@
+from typing import Dict
+
 from langchain.document_loaders import UnstructuredHTMLLoader
 
-from app.modules.file.entity.files import FileEntity
+from .common import process_file
 
 
-def process_html(process_file, file: FileEntity, brain_id):
+def process_html(
+	file: Dict,
+	agent_name: str
+):
 	return process_file(
 		file=file,
 		loader_class=UnstructuredHTMLLoader,
-		brain_id=brain_id,
+		agent_name=agent_name,
 	)

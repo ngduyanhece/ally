@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from uuid import UUID
 
-from ally.modules.agent.entity.agent_entity import AgentUser, UserAgentEntity
+from modules.agent.entity.agent_entity import AgentUser, UserAgentEntity
 
 
 class AgentUserInterface(ABC):

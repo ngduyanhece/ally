@@ -1,8 +1,8 @@
-import { toast } from 'sonner';
+import toast from "react-hot-toast";
 
-import { ChainlitAPI, ClientError } from '@chainlit/react-client';
+import { ChainlitAPI, ClientError } from "@chainlit/react-client";
 
-const devServer = 'http://localhost:8000';
+const devServer = "http://localhost:5050";
 const url = import.meta.env.DEV ? devServer : window.origin;
 const serverUrl = new URL(url);
 
@@ -10,9 +10,9 @@ const httpEndpoint = `${serverUrl.protocol}//${serverUrl.host}`;
 export const wsEndpoint = httpEndpoint;
 
 const on401 = () => {
-  if (window.location.pathname !== '/login') {
+  if (window.location.pathname !== "/login") {
     // The credentials aren't correct, remove the token and redirect to login
-    window.location.href = '/login';
+    window.location.href = "/login";
   }
 };
 

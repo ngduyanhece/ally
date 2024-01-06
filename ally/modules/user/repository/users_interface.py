@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from ally.modules.user.dto.inputs import (UserSignInProperties,
-                                          UserUpdatableProperties)
-from ally.modules.user.entity.user_identity import UserIdentity
+from modules.user.dto.inputs import (UserSignInProperties,
+                                     UserUpdatableProperties)
+from modules.user.entity.user_identity import UserIdentity
 
 
 class UsersInterface(ABC):

@@ -1,15 +1,16 @@
+from typing import Dict
+
 from langchain.document_loaders import CSVLoader
 
-from app.modules.file.entity.files import FileEntity
+from .common import process_file
 
 
 def process_csv(
-	process_file,
-	file: FileEntity,
-	brain_id,
+	file: Dict,
+	agent_name: str,
 ):
 	return process_file(
 		file=file,
 		loader_class=CSVLoader,
-		brain_id=brain_id,
+		agent_name=agent_name,
 	)
