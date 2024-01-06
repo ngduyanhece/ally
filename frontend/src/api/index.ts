@@ -2,8 +2,9 @@ import toast from "react-hot-toast";
 
 import { ChainlitAPI, ClientError } from "@chainlit/react-client";
 
-const devServer = "http://localhost:5050";
-const url = import.meta.env.DEV ? devServer : window.origin;
+const devServer = "http://52.74.55.75:5050";
+// const url = import.meta.env.DEV ? devServer : window.origin;
+const url = devServer;
 const serverUrl = new URL(url);
 
 const httpEndpoint = `${serverUrl.protocol}//${serverUrl.host}`;
