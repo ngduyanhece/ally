@@ -10,6 +10,7 @@ from modules.chainlit.chat_settings import init_chainlit_settings
 from modules.chainlit.password_auth import init_chainlit_password_auth
 from modules.chainlit.socket import init_custom_socket
 from routers import router
+from starlette.middleware.cors import CORSMiddleware
 
 logger = get_logger(__name__)
 
@@ -20,6 +21,15 @@ port = 5050
 config.run.headless = True
 config.run.watch = True
 config.run.port = port
+
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=["*"],
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"],
+)
+
 
 init_custom_socket()
 init_chainlit_chat_profile()
