@@ -1,14 +1,13 @@
 
 from typing import Optional
 
+from core.settings import settings
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-from ally.core.settings import settings
-from ally.middlewares.auth.jwt_token_handler import (decode_access_token,
-                                                     verify_token)
-from ally.modules.api_key.service.api_key_service import APIKeyService
-from ally.modules.user.entity.user_identity import UserIdentity
+from middlewares.auth.jwt_token_handler import (decode_access_token,
+                                                verify_token)
+from modules.api_key.service.api_key_service import APIKeyService
+from modules.user.entity.user_identity import UserIdentity
 
 api_key_service = APIKeyService()
 

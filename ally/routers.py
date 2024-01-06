@@ -1,8 +1,7 @@
 from fastapi import APIRouter
-
-from ally.modules.agent.controller import agent_routes
-from ally.modules.api_key.controller import api_key_routes
-from ally.modules.user.controller import user_routes
+from modules.agent.controller import agent_routes
+from modules.api_key.controller import api_key_routes
+from modules.user.controller import user_routes
 
 router = APIRouter()
 router.include_router(api_key_routes.api_key_router, tags=["API Key"])

@@ -3,12 +3,11 @@ from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException
+from modules.api_key.entity.api_key import ApiKey
+from modules.api_key.repository.api_keys import ApiKeys
+from modules.user.entity.user_identity import UserIdentity
+from modules.user.service.user_service import UserService
 from pydantic.v1 import DateError
-
-from ally.modules.api_key.entity.api_key import ApiKey
-from ally.modules.api_key.repository.api_keys import ApiKeys
-from ally.modules.user.entity.user_identity import UserIdentity
-from ally.modules.user.service.user_service import UserService
 
 user_service = UserService()
 

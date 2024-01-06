@@ -1,6 +1,5 @@
 import chainlit as cl
-
-from ally.modules.agent.service.agent_user_service import AgentUserService
+from modules.agent.service.agent_user_service import AgentUserService
 
 agent_user_service = AgentUserService()
 

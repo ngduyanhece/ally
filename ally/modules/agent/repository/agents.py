@@ -2,14 +2,13 @@
 
 from datetime import datetime
 
+from core.settings import get_supabase_client, settings
+from logger import get_logger
+from modules.agent.dto.inputs import (AgentUpdatableProperties,
+                                      CreateAgentProperties)
+from modules.agent.entity.agent_entity import AgentEntity
+from modules.agent.repository.interfaces.agents import AgentsInterface
 from openai import AsyncOpenAI
-
-from ally.core.settings import get_supabase_client, settings
-from ally.logger import get_logger
-from ally.modules.agent.dto.inputs import (AgentUpdatableProperties,
-                                           CreateAgentProperties)
-from ally.modules.agent.entity.agent_entity import AgentEntity
-from ally.modules.agent.repository.interfaces.agents import AgentsInterface
 
 logger = get_logger(__name__)
 
@@ -26,6 +25,7 @@ class Agents(AgentsInterface):
 		client = AsyncOpenAI(api_key=settings.openai_api_key)
 		assistant = await client.beta.assistants.create(
 			name=agent.name,
+			description=agent.description,
 			instructions=agent.instructions,
 			model=agent.model,
 		)
@@ -34,6 +34,8 @@ class Agents(AgentsInterface):
 			{
 				"id": assistant.id,
 				"name": agent.name,
+				"description": agent.description,
+				"icon": agent.icon,
 				"instructions": agent.instructions,
 				"model": agent.model,
 			}

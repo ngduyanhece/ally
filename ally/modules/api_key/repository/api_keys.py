@@ -3,9 +3,9 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from ally.core.settings import get_supabase_client
-from ally.modules.api_key.entity.api_key import ApiKey
-from ally.modules.api_key.repository.api_keys_interface import ApiKeysInterface
+from core.settings import get_supabase_client
+from modules.api_key.entity.api_key import ApiKey
+from modules.api_key.repository.api_keys_interface import ApiKeysInterface
 
 
 class ApiKeys(ApiKeysInterface):

@@ -1,7 +1,6 @@
 import chainlit as cl
-
-from ally.modules.agent.dto.inputs import AgentUpdatableProperties
-from ally.modules.agent.service.agent_service import AgentService
+from modules.agent.dto.inputs import AgentUpdatableProperties
+from modules.agent.service.agent_service import AgentService
 
 agent_service = AgentService()
 
@@ -13,12 +12,13 @@ def init_chainlit_settings():
 	async def setup_agent(settings):
 		agent_name = cl.user_session.get("chat_profile")
 		agent = agent_service.get_agent_by_name(agent_name)
-		name = settings.get("agent_name")
+		description = settings.get("description")
 		instructions = settings.get("instructions")
 		agent_model = settings.get("agent_model")
 
 		agent_update_values = AgentUpdatableProperties(
-			name=name,
+			name=agent_name,
+			description=description,
 			instructions=instructions,
 			model=agent_model
 		)
@@ -28,7 +28,7 @@ def init_chainlit_settings():
 		if response is None:
 			await cl.Message(content="Agent not found").send()
 			return
-		agent_service.update_agent_last_update_time(agent.id)
+		# agent_service.update_agent_last_update_time(agent.id)
 		await cl.Message(content="Agent updated successfully").send()
     
 	

@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "lyrical-link-410013",
+  "private_key_id": "f50a7a2dad721598a1d70f9b8efbfc4a9dcb5869",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDopBBYj/a1z3MG\nceet9/cyjwDICISTnzNbruwxFUiAtW84pN25oJeVlNFT5JQoecn7o8N+Zgxkg9S6\nRDZYjYsKgmrxPFF6sYnwMFizyHH7CPr/9yIQijFbufEDpEb93WYPDnR+83bHyfA/\n/xDW+kuvCcCzBDSV9qqGpioGYYMya6j0GBjr0NVOQDK/XWOmr0uWb8G3h2b3mk+U\nyfhalO2iHsmFUnT6UbGrup1dAhimRxSE17UxyKVdIJXYMm+hgtHwGyxx9xFdVAng\nJMkEAxmtbptrErTaCogFc/F27s+ZY0smqm5C+Zu+0dnFgUAlaUYGYq59q0OnXFYJ\n6mZ7fr5ZAgMBAAECggEAMcrjwMDXciR7nxaEGuUm4IhhB29jSOFbMbVn0j2W7g1n\nR71pw5BOwXI/t3AGEf+3LofnkMcwwdbBkjiFVUC+ULqHPyjE27jiKCmA4sH1O2C5\nsE1p2hZp6BMNNdVUaIOZk4Fph75+Xtam+FuUdB7QUh+JQgeVZb+M0hMAjasTVJfz\n8UlY3odI4WGjnJwQbjf7E3qQEFV6Ef2zYy3BZpuJ0lg0Pv2jxQH86d8aq2mpKR97\nIIWVVU/JcBGvTox5sObNNGt2wCzL6GyMy0U1ypCwRRgQbTM05GwuH7urufQ9lCVU\nm47veXusBByfz7FQavApivL2Cv0TDUiUPlfc/LIoPQKBgQD22VnsnDdRXH5vfknO\nTyuyAqMANr6Vnvl3tS3goSCNWlU81YPa33F9/rOdzHWxRn2QYhBL6HodkiDVFRzh\nvIfCxYv+qqJPQnwEZkOMs2JcrBHMGcdYGUO6j+nge/IjF/4qoLP8oJ5IlIlTv38B\niGVkVvgpg/xTsoPcIG3Id35QzwKBgQDxQ9/OUrMPBPcXQb1LUAYankzrWnd8b67Q\n9W9LmqFtxQpF+w5WT40b0zUEJ4K9IyWx6HlNPLrevbXeNtCQHThFAFC9nhfaz+Fv\nRxH/9u+jZ2B3++grSFu8LW9uMVHEK1hyiwtubscxzqLBZ6WRAoOSWSL+7RtKN4os\nAIRZdNw4VwKBgEynO+xkqiziuwRmRAcDwL7bYMCNP2t43WDV6zQo9NHQLk3gw7ww\nzK5ibGZg+l8dU5qFSSg5Pcp2+SkSEFDs2X+bFpjzZcmVDKvVEb7caXv7lt85VhS+\na7DARdEGzC8noS6djqaxPdWuAmL2QTs5nrqk4xUJPk7DTX0KuOyaZqgzAoGAcuju\n+aft3KNyxELtU6eDoL3wyM/HxR60VpXvMkUtychlQjt28qjk/nGz+IyQ+mB5Hakp\nzR21q00UCAh3gYxJNqQV0JoxpmgIaSWibxU/wcYE7mCujZ7jAldpkUQwO4yhjbyn\n7ysX+KMAZbll5BEcdWG7B0wLCWg2iQqd/rVoBfUCgYEAm46IkHO1wHRWREKPRWgt\nBsXkCUCqUnB0gKMLgWR+V/f8vpOHRYCL7ZA9/bilMIhOjbwau361vnYxtQ7fphZB\n/DVvh5xlh0oItfoXX07CTUCjholLhkwvNs7R0IcQURSDPUCSERRaURRth7PposE+\nY1uybhMYmRvDiNmKsQ7j820=\n-----END PRIVATE KEY-----\n",
+  "client_email": "ally-ai-service@lyrical-link-410013.iam.gserviceaccount.com",
+  "client_id": "114176822002054590313",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/ally-ai-service%40lyrical-link-410013.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

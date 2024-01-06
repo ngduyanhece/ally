@@ -1,7 +1,7 @@
 from typing import List
 
-from ally.modules.agent.entity.agent_entity import UserAgentEntity
-from ally.modules.agent.repository.agents_users import AgentsUsers
+from modules.agent.entity.agent_entity import UserAgentEntity
+from modules.agent.repository.agents_users import AgentsUsers
 
 
 class AgentUserService:

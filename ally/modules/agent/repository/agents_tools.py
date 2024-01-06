@@ -1,9 +1,9 @@
 
 from typing import List
 
-from ally.core.settings import get_supabase_client
-from ally.modules.agent.entity.agent_entity import ToolEntity
-from ally.modules.agent.repository.interfaces.agents_tools_interface import \
+from core.settings import get_supabase_client
+from modules.agent.entity.agent_entity import ToolEntity
+from modules.agent.repository.interfaces.agents_tools_interface import \
     AgentToolInterface
 
 

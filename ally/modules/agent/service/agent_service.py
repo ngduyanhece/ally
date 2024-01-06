@@ -1,7 +1,7 @@
 
 
-from ally.modules.agent.entity.agent_entity import AgentEntity
-from ally.modules.agent.repository.agents import Agents
+from modules.agent.entity.agent_entity import AgentEntity
+from modules.agent.repository.agents import Agents
 
 
 class AgentService:

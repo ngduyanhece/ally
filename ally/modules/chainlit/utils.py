@@ -2,11 +2,10 @@ import asyncio
 from typing import Dict
 
 import chainlit as cl
+from core.settings import settings
 from openai import AsyncOpenAI
 from openai.types.beta.threads import (MessageContentImageFile,
                                        MessageContentText, ThreadMessage)
-
-from ally.core.settings import settings
 
 client = AsyncOpenAI(api_key=settings.openai_api_key)
 
@@ -14,13 +13,13 @@ def isAsync(someFunc):
 	return asyncio.iscoroutinefunction(someFunc)
 
 # List of allowed mime types
-allowed_mime = ['text/csv']
+allowed_mime = ['text/csv', 'application/pdf']
 
 # Check if the files uploaded are allowed
 async def check_files(files):
-	for file in files:
-		if file.mime not in allowed_mime:
-			return False
+	# for file in files:
+	# 	if file.mime not in allowed_mime:
+	# 		return False
 	return True
 
 
@@ -28,13 +27,13 @@ async def check_files(files):
 async def upload_files(files):
 	file_ids = []
 	for file in files:
-		uploaded_file = client.files.create(
+		uploaded_file = await client.files.create(
 			file=file.content, purpose="assistants")
 		file_ids.append(uploaded_file.id)
 	return file_ids
 
 async def process_thread_message(
-		message_references: Dict[str, cl.Message], thread_message: ThreadMessage
+		message_references: Dict[str, cl.Message], thread_message: ThreadMessage, author: str
 ):
 	for idx, content_message in enumerate(thread_message.content):
 		id = thread_message.id + str(idx)
@@ -45,7 +44,7 @@ async def process_thread_message(
 				await msg.update()
 			else:
 				message_references[id] = cl.Message(
-					author=thread_message.role, content=content_message.text.value
+					author=author, content=content_message.text.value
 				)
 				await message_references[id].send()
 		elif isinstance(content_message, MessageContentImageFile):
@@ -62,7 +61,7 @@ async def process_thread_message(
 
 			if id not in message_references:
 				message_references[id] = cl.Message(
-					author=thread_message.role,
+					author=author,
 					content="",
 					elements=elements,
 				)

@@ -1,9 +1,8 @@
 import asyncio
 
 from chainlit.config import DEFAULT_HOST
-
-from ally.middlewares.cors import add_cors_middleware
-from ally.server import app, port
+from middlewares.cors import add_cors_middleware
+from server import app, port
 
 if __name__ == "__main__":
   	

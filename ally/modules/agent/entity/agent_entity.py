@@ -2,9 +2,8 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
+from modules.agent.dto.inputs import ModelTye
 from pydantic import BaseModel
-
-from ally.modules.agent.dto.inputs import ModelTye
 
 
 class RoleEnum(str, Enum):
@@ -16,6 +15,8 @@ class RoleEnum(str, Enum):
 class AgentEntity(BaseModel):
 	id: str
 	name: str
+	description: Optional[str]
+	icon: Optional[str]
 	instructions: str
 	model: Optional[ModelTye]
       
@@ -29,6 +30,8 @@ class AgentUser(BaseModel):
 class UserAgentEntity(BaseModel):
 	id: str
 	name: str
+	description: Optional[str]
+	icon: Optional[str]
 	instructions: str
 	model: Optional[ModelTye]
 	rights: RoleEnum

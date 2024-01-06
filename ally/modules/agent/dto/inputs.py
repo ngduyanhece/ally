@@ -11,11 +11,14 @@ class ModelTye(str, Enum):
 class CreateAgentProperties(BaseModel):
 	"""The properties to create an agent."""
 	name: str
+	description: Optional[str]
+	icon: Optional[str]
 	instructions: str
 	model: ModelTye
 
 class AgentUpdatableProperties(BaseModel):
 	"""The properties to update an agent."""
 	name: Optional[str]
+	description: Optional[str]
 	instructions: Optional[str]
 	model: Optional[ModelTye]

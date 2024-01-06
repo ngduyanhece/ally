@@ -2,19 +2,18 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-
-from ally.logger import get_logger
-from ally.middlewares.auth.auth_bearer import AuthBearer, get_current_user
-from ally.modules.agent.dto.inputs import (AgentUpdatableProperties,
-                                           CreateAgentProperties)
-from ally.modules.agent.entity.agent_entity import (AgentEntity, RoleEnum,
-                                                    UserAgentEntity)
-from ally.modules.agent.service.agent_authorization_service import \
+from logger import get_logger
+from middlewares.auth.auth_bearer import AuthBearer, get_current_user
+from modules.agent.dto.inputs import (AgentUpdatableProperties,
+                                      CreateAgentProperties)
+from modules.agent.entity.agent_entity import (AgentEntity, RoleEnum,
+                                               UserAgentEntity)
+from modules.agent.service.agent_authorization_service import \
     has_agent_authorization
-from ally.modules.agent.service.agent_service import AgentService
-from ally.modules.agent.service.agent_tool_service import AgentToolService
-from ally.modules.agent.service.agent_user_service import AgentUserService
-from ally.modules.user.entity.user_identity import UserIdentity
+from modules.agent.service.agent_service import AgentService
+from modules.agent.service.agent_tool_service import AgentToolService
+from modules.agent.service.agent_user_service import AgentUserService
+from modules.user.entity.user_identity import UserIdentity
 
 logger = get_logger(__name__)
 agent_router = APIRouter()

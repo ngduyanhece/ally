@@ -1,6 +1,5 @@
 import chainlit as cl
-
-from ally.modules.agent.service.agent_service import AgentService
+from modules.agent.service.agent_service import AgentService
 
 agent_service = AgentService()
 
@@ -13,5 +12,5 @@ def init_chainlit_actions():
 		if response is None:
 			await cl.Message(content="Agent not found").send()
 			return
-		await cl.Message(content="Agent deleted successfully").send()
+		await cl.Message(content="Agent deleted successfully - Reload your app to see the change").send()
 		await action.remove()

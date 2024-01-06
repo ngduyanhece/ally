@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Run script on EC2
-      uses: fifsky/ssh-action@master
-      with:
-        command: bash /home/ubuntu/update-script.sh ${{ secrets.GIT_PAT }}
-        host: 52.74.55.75
-        user: ubuntu
-        key: ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }}
+      - name: Run script on EC2
+        uses: fifsky/ssh-action@master
+        with:
+          command: bash /home/ubuntu/update-script.sh ${{ secrets.GIT_PAT }}
+          host: 52.74.55.75
+          user: ubuntu
+          key: ${{ secrets.EC2_DEV_SSH_PRIVATE_KEY }}

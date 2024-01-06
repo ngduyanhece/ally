@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from ally.modules.agent.entity.agent_entity import ToolEntity
+from modules.agent.entity.agent_entity import ToolEntity
 
 
 class AgentToolInterface(ABC):

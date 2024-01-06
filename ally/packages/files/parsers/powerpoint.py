@@ -1,11 +1,16 @@
+from typing import Dict
+
 from langchain.document_loaders import UnstructuredPowerPointLoader
 
-from app.modules.file.entity.files import FileEntity
+from .common import process_file
 
 
-def process_powerpoint(process_file, file: FileEntity, brain_id):
+def process_powerpoint(
+	file: Dict,
+	agent_name: str
+):
 	return process_file(
 		file=file,
 		loader_class=UnstructuredPowerPointLoader,
-		brain_id=brain_id,
+		agent_name=agent_name,
 	)

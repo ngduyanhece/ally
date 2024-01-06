@@ -12,6 +12,9 @@ class COREAPPSETTING(BaseSettings):
 	crawl_depth: str
 	authenticate: bool
 	chainlit_auth_secret: str
+	chainlit_api_key: str
+	pinecone_api_key: str
+	pinecone_environment: str
 
 settings = COREAPPSETTING(_env_file='.env', _env_file_encoding='utf-8')
 

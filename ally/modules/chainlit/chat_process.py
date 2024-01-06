@@ -4,25 +4,25 @@ import json
 
 import chainlit as cl
 from chainlit.context import context
-from chainlit.input_widget import Select, TextInput
+from chainlit.input_widget import Select
+from core.settings import settings
+from logger import get_logger
+from modules.agent.service.agent_service import AgentService
+from modules.chainlit.input_widget import TextInput
+from modules.chainlit.utils import (DictToObject, check_files, isAsync,
+                                    process_thread_message, upload_files)
+from modules.tools.load_tools import _TOOL_NAME_MAP
 from openai import AsyncOpenAI
-
-from ally.core.settings import settings
-from ally.logger import get_logger
-from ally.modules.agent.service.agent_service import AgentService
-from ally.modules.chainlit.utils import (DictToObject, check_files, isAsync,
-                                         process_thread_message, upload_files)
-from ally.modules.tools.load_tools import _TOOL_NAME_MAP
 
 logger = get_logger(__name__)
 
 agent_service = AgentService()
 
 def init_chainlit_chat_process():
-	@cl.author_rename
-	def rename(orig_author: str):
-		rename_dict = {"Chatbot": "Assistant"}
-		return rename_dict.get(orig_author, orig_author)
+	# @cl.author_rename
+	# def rename(orig_author: str):
+	# 	rename_dict = {"Chatbot": "Assistant"}
+	# 	return rename_dict.get(orig_author, orig_author)
 
 	@cl.on_chat_start
 	async def setup_conversation():
@@ -30,29 +30,39 @@ def init_chainlit_chat_process():
 		agent_name = cl.user_session.get("chat_profile")
 		agent = agent_service.get_agent_by_name(agent_name)
 		cl.user_session.set("agent_id", agent.id)
+		cl.user_session.set("agent_name", agent_name)
 
 		thread = await openai_client.beta.threads.create()
 		cl.user_session.set("thread", thread)
 		cl.user_session.set("openai_client", openai_client)
 
+		await cl.Avatar(
+        name=agent_name,
+        url=agent.icon,
+    ).send()
+
 		# setup the actions
 
-		if agent_name != "Ally":
-  			
-			actions = [
-				cl.Action(name="delete_agent", value="delete_agent", description="Delete This Agent")
-			]
-			await cl.Message(content="your actions", actions=actions).send()
+		if agent_name != "ally":
 
 			# setup the settings
 			agent_settings = await cl.ChatSettings(
 				[
-					TextInput(id="agent_name", label="Agent Name", initial=agent_name),
-					TextInput(id="instructions", label="Instructions", initial=agent.instructions),
+					TextInput(
+						id="description",
+						label="Description",
+						initial=agent.description
+					),
+					TextInput(
+						id="instructions",
+						label="Instructions",
+						initial=agent.instructions,
+						multiline=True
+					),
 					Select(
 						id="agent_model",
 						label="Agent Model",
-						values=["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
+						values=["gpt-4-1106-preview", "gpt-3.5-turbo-1106"],
 						initial_index=0,
 					)
 				]
@@ -60,6 +70,8 @@ def init_chainlit_chat_process():
 	
 	@cl.on_message
 	async def run_conversation(message_from_ui: cl.Message):
+		"""Handle a message sent by the User."""
+		agent_name = cl.user_session.get("agent_name")
 		thread = cl.user_session.get("thread")
 		openai_client = cl.user_session.get("openai_client")
 		assistant_id = cl.user_session.get("agent_id")
@@ -87,7 +99,7 @@ def init_chainlit_chat_process():
 		)
 
 		# Send empty message to display the loader
-		loader_msg = cl.Message(author="assistant", content="")
+		loader_msg = cl.Message(author=agent_name, content="")
 		await loader_msg.send()
 
 		# Create the run
@@ -120,7 +132,7 @@ def init_chainlit_chat_process():
 						message_id=step_details.message_creation.message_id,
 						thread_id=thread.id,
 					)
-					await process_thread_message(message_references, thread_message)
+					await process_thread_message(message_references, thread_message, agent_name)
 
 				if step_details.type == "tool_calls":
 					for tool_call in step_details.tool_calls:

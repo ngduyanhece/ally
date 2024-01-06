@@ -3,12 +3,11 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-
-from ally.middlewares.auth.auth_bearer import get_current_user
-from ally.modules.agent.entity.agent_entity import RoleEnum
-from ally.modules.agent.service.agent_service import AgentService
-from ally.modules.agent.service.agent_user_service import AgentUserService
-from ally.modules.user.entity.user_identity import UserIdentity
+from middlewares.auth.auth_bearer import get_current_user
+from modules.agent.entity.agent_entity import RoleEnum
+from modules.agent.service.agent_service import AgentService
+from modules.agent.service.agent_user_service import AgentUserService
+from modules.user.entity.user_identity import UserIdentity
 
 agent_service = AgentService()
 agent_user_service = AgentUserService()

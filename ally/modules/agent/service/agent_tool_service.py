@@ -1,10 +1,9 @@
+from core.settings import settings
+from logger import get_logger
+from modules.agent.repository.agents_tools import AgentsTools
+from modules.agent.service.agent_service import AgentService
+from modules.tools.load_tools import _TOOL_INTERFACE_MAP
 from openai import AsyncOpenAI
-
-from ally.core.settings import settings
-from ally.logger import get_logger
-from ally.modules.agent.repository.agents_tools import AgentsTools
-from ally.modules.agent.service.agent_service import AgentService
-from ally.modules.tools.load_tools import _TOOL_INTERFACE_MAP
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,10 @@ class AgentToolService:
 	) -> dict | None:
 		tools = self.get_tools_for_agent(agent_id)
 		tool_names = [tool.name for tool in tools]
-		agent_tools = [{"type": "code_interpreter"}]
+		agent_tools = [
+			{"type": "code_interpreter"},
+			{"type": "retrieval"},
+		]
 		for tool_name in tool_names:
 			tool_interface = _TOOL_INTERFACE_MAP.get(tool_name)
 			if tool_interface is not None:

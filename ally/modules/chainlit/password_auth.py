@@ -1,8 +1,7 @@
 from typing import Optional
 
 import chainlit as cl
-
-from ally.core.settings import get_supabase_client
+from core.settings import get_supabase_client
 
 
 def init_chainlit_password_auth():

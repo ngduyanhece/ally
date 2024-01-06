@@ -2,10 +2,9 @@
 from typing import List
 
 import chainlit as cl
-
-from ally.logger import get_logger
-from ally.modules.agent.service.agent_user_service import AgentUserService
-from ally.modules.chainlit.types import AllyChatProfile
+from logger import get_logger
+from modules.agent.service.agent_user_service import AgentUserService
+from modules.chainlit.types import AllyChatProfile
 
 agent_user_service = AgentUserService()
 logger = get_logger(__name__)
@@ -20,8 +19,8 @@ def init_chainlit_chat_profile():
 			user_chat_profiles.append(
 				cl.ChatProfile(
 					name=agent.name,
-					markdown_description="",
-					icon="https://myfirefly-ai.s3.amazonaws.com/ally_agent_avatar/3.png"
+					markdown_description=agent.description,
+					icon=agent.icon,
 				)
 			)
 		return user_chat_profiles
