@@ -12,7 +12,7 @@ class COREAPPSETTING(BaseSettings):
 	crawl_depth: str
 	authenticate: bool
 	chainlit_auth_secret: str
-	chainlit_api_key: str
+	# chainlit_api_key: str
 	pinecone_api_key: str
 	pinecone_environment: str
 

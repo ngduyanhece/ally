@@ -70,16 +70,27 @@ async def create_new_agent_tool(
 
 		# allow agent to use retrieve agent memory tool
 		# create new entry in agents_tools table
+		retrieve_agent_memory_tool_id = db.from_("tools").select(
+			"id"
+		).eq(
+			"name", "retrieve_agent_memory_tool"
+		).execute().get("id")
+		update_agent_memory_tool_id = db.from_("tools").select(
+			"id"
+		).eq(
+			"name", "update_agent_memory_tool"
+		).execute().get("id")
+
 		db.from_("agents_tools").insert(
 			{
 				"agent_id": new_agent.id,
-				"tool_id": "retrieve_agent_memory_tool",
+				"tool_id": retrieve_agent_memory_tool_id,
 			}
 		).execute()
 		db.from_("agents_tools").insert(
 			{
 				"agent_id": new_agent.id,
-				"tool_id": "update_agent_memory_tool",
+				"tool_id": update_agent_memory_tool_id,
 			}
 		).execute()
 		return "Agent {agent} created successfully please reload your page to start using your new agent".format(agent=new_agent.name)
