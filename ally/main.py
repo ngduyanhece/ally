@@ -4,6 +4,8 @@ from chainlit.config import DEFAULT_HOST
 from middlewares.cors import add_cors_middleware
 from server import app, port
 
+add_cors_middleware(app)
+
 if __name__ == "__main__":
   	
 	import uvicorn
