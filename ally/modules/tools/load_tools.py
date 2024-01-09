@@ -16,9 +16,14 @@ from modules.tools.pre_build.coingecko.get_detail import (
 from modules.tools.pre_build.coingecko.get_list import (
     get_all_of_token_from_coingecko_tool,
     get_all_of_token_from_coingecko_tool_interface)
+from modules.tools.pre_build.coingecko.get_market_chart import (
+    get_market_chart_of_token_from_coingecko_tool,
+    get_market_chart_of_token_from_coingecko_tool_interface)
 from modules.tools.pre_build.coingecko.get_trending import (
     get_trending_token_from_coingecko_tool,
     get_trending_token_from_coingecko_tool_interface)
+from modules.tools.pre_build.cryptopanic.get_news import (
+    get_news_from_cryptopanic_tool, get_news_from_cryptopanic_tool_interface)
 from modules.tools.pre_build.dummy.dummy import (get_current_weather_interface,
                                                  get_current_weather_tool)
 from modules.tools.pre_build.gemini.ask_gemini import (
@@ -33,6 +38,8 @@ _TOOL_NAME_MAP: Dict[str, object] = {
 	"get_trending_token_from_coingecko_tool": get_trending_token_from_coingecko_tool,
 	"get_detail_of_token_from_coingecko_tool": get_detail_of_token_from_coingecko_tool,
 	"get_all_of_token_from_coingecko_tool": get_all_of_token_from_coingecko_tool,
+	"get_market_chart_of_token_from_coingecko_tool": get_market_chart_of_token_from_coingecko_tool,
+	"get_news_from_cryptopanic_tool": get_news_from_cryptopanic_tool,
 	"retrieve_agent_memory_tool": retrieve_agent_memory_tool,
 	"ask_gemini_tool": ask_gemini_tool
 }
@@ -46,6 +53,8 @@ _TOOL_INTERFACE_MAP: Dict[str, dict] = {
 	"get_trending_token_from_coingecko_tool": get_trending_token_from_coingecko_tool_interface,
 	"get_detail_of_token_from_coingecko_tool": get_detail_of_token_from_coingecko_tool_interface,
 	"get_all_of_token_from_coingecko_tool": get_all_of_token_from_coingecko_tool_interface,
+	"get_market_chart_of_token_from_coingecko_tool": get_market_chart_of_token_from_coingecko_tool_interface,
+	"get_news_from_cryptopanic_tool": get_news_from_cryptopanic_tool_interface,
 	"retrieve_agent_memory_tool": retrieve_agent_memory_tool_interface,
 	"ask_gemini_tool": ask_gemini_tool_interface
 }
