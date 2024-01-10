@@ -2,7 +2,6 @@ import chainlit as cl
 from modules.agent.dto.inputs import AgentUpdatableProperties
 from modules.agent.service.agent_service import AgentService
 
-agent_service = AgentService()
 
 def init_chainlit_settings():
 	"""
@@ -10,6 +9,7 @@ def init_chainlit_settings():
 	"""
 	@cl.on_settings_update
 	async def setup_agent(settings):
+		agent_service = AgentService()
 		agent_name = cl.user_session.get("chat_profile")
 		agent = agent_service.get_agent_by_name(agent_name)
 		description = settings.get("description")
