@@ -50,6 +50,7 @@
     "aiter",
     "asyncpg",
     "autouse",
+    "avoca",
     "bertscore",
     "CELEBRY",
     "chainlit",
