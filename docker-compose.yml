@@ -24,13 +24,11 @@ services:
     volumes:
       - ./ally/:/code/
     command:
-      - "uvicorn"
+      - "hypercorn"
       - "main:app"
       - "--reload"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "5050"
+      - "--bind"
+      - "0.0.0.0:5050"
     restart: always
     ports:
       - 5050:5050

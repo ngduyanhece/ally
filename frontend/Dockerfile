@@ -14,7 +14,7 @@ WORKDIR /app
 # Copy package.json and yarn.lock
 # to the /app working directory
 
-COPY package*.json pnpm-lock.yaml* ./
+COPY package*.json ./
 
 #copy libs folder to /app working directory
 
