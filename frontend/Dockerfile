@@ -26,8 +26,8 @@ COPY . .
 # Install dependencies in /app
 RUN pnpm i
 
-# Ensure port 443 is accessible to our system
-EXPOSE 443
+# Ensure port 3000 is accessible to our system
+EXPOSE 3000
 
 # Run yarn dev, as we would via the command line 
 CMD ["pnpm", "run", "host"]
