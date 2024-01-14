@@ -19,3 +19,4 @@ plotly==5.18.0
 pycoingecko==3.1.0
 pinecone-client==2.2.4
 google-cloud-aiplatform==1.38.1
+Hypercorn==0.16.0
