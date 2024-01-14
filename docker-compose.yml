@@ -6,12 +6,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend-v2.0
+    container_name: frontend-v1.0
     depends_on:
       - backend-core
     restart: always
     ports:
-      - 443:443
+      - 3000:3000
 
   backend-core:
     pull_policy: never
@@ -20,7 +20,7 @@ services:
     build:
       context: ally
       dockerfile: Dockerfile
-    container_name: backend-core-v2.0
+    container_name: backend-core-v1.0
     volumes:
       - ./ally/:/code/
     command:
@@ -29,10 +29,6 @@ services:
       - "--reload"
       - "--bind"
       - "0.0.0.0:5050"
-      - "--keyfile"
-      - "/code/ssl/allyai.ai.key"
-      - "--certfile"
-      - "/code/ssl/allyai.ai.crt"
     restart: always
     ports:
       - 5050:5050
