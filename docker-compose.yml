@@ -29,6 +29,10 @@ services:
       - "--reload"
       - "--bind"
       - "0.0.0.0:5050"
+      - "--keyfile"
+      - "/code/ssl/allyai.ai.key"
+      - "--certfile"
+      - "/code/ssl/allyai.ai.crt"
     restart: always
     ports:
       - 5050:5050
