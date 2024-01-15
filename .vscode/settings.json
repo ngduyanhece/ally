@@ -1,9 +1,9 @@
 {
   "python.formatting.provider": "black",
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-    "source.fixAll": true,
-    "source.unusedImports": true
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit",
+    "source.unusedImports": "explicit"
   },
   "python.linting.enabled": true,
   "python.linting.flake8Enabled": true,
@@ -12,8 +12,8 @@
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports": true,
-      "source.fixAll": true
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
     }
   },
   "[typescriptreact]": {
@@ -49,13 +49,19 @@
     "acall",
     "aiter",
     "asyncpg",
+    "autouse",
+    "avoca",
     "bertscore",
     "CELEBRY",
+    "chainlit",
     "COREAPPSETTING",
+    "cryptopanic",
     "dataframe",
     "dateshort",
     "deberta",
+    "docstore",
     "fastapi",
+    "Foodally",
     "healthz",
     "huggingface",
     "iloc",
@@ -63,30 +69,41 @@
     "infosbrains",
     "ipnyb",
     "ipynb",
+    "isna",
     "iterrows",
     "Knowledges",
     "langchain",
     "llmchoice",
     "llms",
     "logprobs",
+    "loguru",
     "metabrain",
+    "metadatas",
     "mpga",
     "nonnull",
     "openai",
     "pbar",
+    "Phoally",
+    "pycoingecko",
     "pydantic",
     "retcode",
     "runtimes",
     "skillset",
+    "starlette",
     "supabase",
+    "sympy",
     "testrun",
     "tiktoken",
     "togggle",
+    "toolkits",
     "tqdm",
+    "uuidv",
+    "uvicorn",
     "vectorstore",
+    "vectorstores",
+    "vertexai",
     "webserver",
     "zalo"
   ],
-  "python.analysis.extraPaths": [
-  ],
+  "python.analysis.extraPaths": []
 }

@@ -1,57 +1,34 @@
-version: '3'
+version: "3"
 
 services:
-  backend-core:
-    env_file:
-      - ./dev.env
+  frontend:
+    pull_policy: never
     build:
-      context: ./
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: backend-core-v1
+    container_name: frontend-v1.0
+    depends_on:
+      - backend-core
     restart: always
+    ports:
+      - 3000:3000
+
+  backend-core:
+    pull_policy: never
+    env_file:
+      - dev.env
+    build:
+      context: ally
+      dockerfile: Dockerfile
+    container_name: backend-core-v1.0
     volumes:
-      - ./:/code/
-    # depends_on:
-    #   - redis
-    #   - worker
+      - ./ally/:/code/
+    command:
+      - "hypercorn"
+      - "main:app"
+      - "--reload"
+      - "--bind"
+      - "0.0.0.0:5050"
+    restart: always
     ports:
       - 5050:5050
-    
-  # redis:
-  #   image: redis:latest
-  #   container_name: redis
-  #   restart: always
-  #   ports:
-  #     - 6379:6379
-  
-  # worker:
-  #   env_file:
-  #     - ./dev.env
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: worker
-  #   command: celery -A app.celery_worker worker -l info
-  #   restart: always
-  #   depends_on:
-  #     - redis
-  #   volumes:
-  #     - ./:/code/
-    
-    
-  # flower:
-  #   env_file:
-  #     - ./dev.env
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: flower
-  #   command: celery -A app.celery_worker flower -l info --port=5555
-  #   restart: always
-  #   volumes:
-  #     - ./:/code/
-  #   depends_on:
-  #     - redis
-  #     - worker
-  #   ports:
-  #     - 5555:5555

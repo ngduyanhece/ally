@@ -149,6 +149,8 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+.DS_Store
+
 # Cython debug symbols
 cython_debug/
 .DS_Store
@@ -161,3 +163,62 @@ cython_debug/
 data/
 examples/data
 ```
+build
+dist
+
+*.egg-info
+
+.env
+
+*.files
+
+poetry.lock
+
+venv
+.venv
+.DS_Store
+
+.chainlit
+!cypress/e2e/**/*/.chainlit
+chainlit.md
+
+cypress/screenshots
+cypress/videos
+cypress/downloads
+
+__pycache__
+
+.ipynb_checkpoints
+
+*.db
+
+.mypy_cache
+
+chat_files
+
+.chroma
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
